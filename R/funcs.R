@@ -1,6 +1,6 @@
 
-#' @title FUNCTION_TITLE
-#' @description FUNCTION_DESCRIPTION
+#' @title sface
+#' @description function to estimate the Subtype Free Average Causal Effect.
 #' @param y The categorical outcome vector of length n.  Must be encoded o for disease-free, 1 for the first subtype and 2 for the second subtype.
 #' @param A The treatment/expousre vector pf length n. Must be encoded 1 for treated and 0 for untreated.
 #' @param X The n × p-matrix of covariates X, Default: NULL
@@ -68,4 +68,37 @@ sface <- function(y,
       return(p_Y11_A1/p_Y11_A0)
     }
   }
+  if(method == "IPTW")
+  {
+    df <- data.frame(y, A, X, weight)
+    df$'1' <- ifelse(y == 1 ,1, 0)
+    df$'2' <- ifelse(y == 2, 1, 0)
+
+    fit_A_by_X <- glm(A ~ X,
+                      df,
+                      family = "binomial",
+                      weights = weight)
+    pred_A <-  predict(fit_A_by_X, type = "response")
+    pr_A_1 <- mean(df$A)
+    n <- nrow(df)
+
+    self <- ifelse(subtype == 1, "1", "2")
+    other <- ifelse(subtype == 1, "2", "1")
+
+    df$w_A <- ifelse(df$A == 1, pr_A_1/pred_A, (1-pr_A_1)/(1-pred_A) ) #Stabilized weights
+    p_Y11_A1 <- sum(df$weight*df$w_A*df$A*df[,self])/sum(df$weight*df$A)
+    p_Y11_A0 <- sum(df$weight*df$w_A*(1-df$A)*df[,self])/sum(df$weight*(1-df$A))
+
+    if(scale == "diff")
+    {
+      p_Y12_A1 <- sum(df$weight*df$w_A*df$A*df[,other])/sum(df$weight*df$A)
+      return(MultPer*(p_Y11_A1 - p_Y11_A0)/(1-p_Y12_A1))
+    }
+
+    if(scale == "RR")
+    {
+      return(p_Y11_A1/p_Y11_A0)
+    }
+  }
+
 }
