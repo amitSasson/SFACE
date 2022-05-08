@@ -1,0 +1,10 @@
+Package: SFACE
+Type: Package
+Title: The Subtype Free Average Causal Effect
+Version: 0.1.0
+Author: person("Amit", "Sasson", email = "amitsasson1@gmail.com", role = c("aut", "cre")))
+Maintainer: The package maintainer <yourself@somewhere.net>
+Description: This package allows estimation of the SF-ACE
+License:  GPL (>= 2)
+Encoding: UTF-8
+LazyData: true
