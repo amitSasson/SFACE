@@ -4,9 +4,11 @@
 #' @param y The categorical outcome vector of length n.  Must be encoded o for disease-free, 1 for the first subtype and 2 for the second subtype.
 #' @param A The treatment/expousre vector pf length n. Must be encoded 1 for treated and 0 for untreated.
 #' @param X The n × p-matrix of covariates X, Default: NULL
-#' @param subtype Indication of which subtype to estimate the SF-ACE of, Default: c(1, 2)
-#' @param scale Indication of weather the SF-ACE should be estimated on the difference or risk ratio scale, Default: c("diff", "RR")
-#' @param method Indication of which method to use when adjusting for covariates, Default: c("stand", "IPTW", "DR")
+#' @param subtype Should the SF-ACE be estimated for subtype 1 or subtype 2
+#' @param scale Indication of weather the SF-ACE should be estimated on the difference or risk ratio scale.
+#' @param method Indication of which method to use when adjusting for covariates, possibilities inclued standardization ("stand"), Inverse Probability Treatment Weighting ("IPTW"), and doubly robust estimation ("DR")
+#' @param lambda1 sensitivity parameter for subtype 1. Can range between 0 (S-Monotonicity for subtype 1) and 1 (D-Monotonicity for subtype 1), Default: 0
+#' @param lambda2 sensitivity parameter for subtype 2. Can range between 0 (S-Monotonicity for subtype 2) and 1 (D-Monotonicity for subtype 2), Default: 0
 #' @param weight A vector of length n, holding weights to adjust for missing subtypes, Default: 1
 #' @param MultPer A numeric value indicating per how many people the effect sould be calculated on the difference scale, Default: 1
 #' @return
@@ -31,6 +33,8 @@ sface <- function(y,
                   subtype = c(1,2),
                   scale = c("diff", "RR"),
                   method = c("stand", "IPTW", "DR"),
+                  lambda1 = 0,
+                  lambda2 = 0,
                   weight = 1,
                   MultPer=1)
 {
@@ -100,5 +104,50 @@ sface <- function(y,
       return(p_Y11_A1/p_Y11_A0)
     }
   }
+  if(method == "DR")
+  {
+    df <- data.frame(y, A, X, weight)
+    df$'1' <- ifelse(y == 1 ,1, 0)
+    df$'2' <- ifelse(y == 2, 1, 0)
 
+    #model A ~ X
+    fit_A_by_X <- glm(A ~ X,
+                      df,
+                      family = "binomial",
+                      weights = weight)
+
+    pred_A <-  predict(fit_A_by_X, type = "response")
+
+    #model y ~ A + X
+    fit_y_by_A_X <- multinom(y ~ A + X,
+                             df,
+                             trace = FALSE,
+                             weights = weight)
+
+    df_treat <- df_untr <- df
+    df_treat$A <- 1
+    df_untr$A <- 0
+
+    pred_treat <- as.data.frame(predict(fit_y_by_A_X, newdata = df_treat, type = "probs"))
+    colnames(pred_treat) <-c("0","1", "2")
+    pred_untr <- as.data.frame(predict(fit_y_by_A_X, newdata = df_untr, type = "probs"))
+    colnames(pred_untr) <-c("0","1", "2")
+
+    self <- ifelse(subtype == 1, "1", "2")
+    other <- ifelse(subtype == 1, "2", "1")
+
+    p_Y11_A1 <- sum(df$weight*(df$A*df[,self]/(pred_A) - ((df$A-pred_A)*pred_treat[,self])/pred_A))/sum(df$weight)
+    p_Y11_A0 <- sum(df$weight*((1-df$A)*df[,self]/(1-pred_A) + ((df$A-pred_A)*pred_untr[,self])/(1-pred_A)))/sum(df$weight)
+
+    if(scale == "diff")
+    {
+      p_Y12_A1 <- sum(df$weight*(df$A*df[,other]/(pred_A) - ((df$A-pred_A)*pred_treat[,other])/pred_A))/sum(df$weight)
+      return(MultPer*(p_Y11_A1 - p_Y11_A0)/(1-p_Y12_A1))
+    }
+
+    if(scale == "RR")
+    {
+      return(p_Y11_A1/p_Y11_A0)
+    }
+  }
 }

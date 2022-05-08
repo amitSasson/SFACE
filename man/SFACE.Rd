@@ -2,7 +2,7 @@
 % Please edit documentation in R/funcs.R
 \name{sface}
 \alias{sface}
-\title{FUNCTION_TITLE}
+\title{sface}
 \usage{
 sface(
   y,
@@ -11,6 +11,8 @@ sface(
   subtype = c(1, 2),
   scale = c("diff", "RR"),
   method = c("stand", "IPTW", "DR"),
+  lambda1 = 0,
+  lambda2 = 0,
   weight = 1,
   MultPer = 1
 )
@@ -22,11 +24,15 @@ sface(
 
 \item{X}{The n × p-matrix of covariates X, Default: NULL}
 
-\item{subtype}{Indication of which subtype to estimate the SF-ACE of, Default: c(1, 2)}
+\item{subtype}{Should the SF-ACE be estimated for subtype 1 or subtype 2}
 
-\item{scale}{Indication of weather the SF-ACE should be estimated on the difference or risk ratio scale, Default: c("diff", "RR")}
+\item{scale}{Indication of weather the SF-ACE should be estimated on the difference or risk ratio scale.}
 
-\item{method}{Indication of which method to use when adjusting for covariates, Default: c("stand", "IPTW", "DR")}
+\item{method}{Indication of which method to use when adjusting for covariates, possibilities inclued standardization ("stand"), Inverse Probability Treatment Weighting ("IPTW"), and doubly robust estimation ("DR")}
+
+\item{lambda1}{sensitivity parameter for subtype 1. Can range between 0 (S-Monotonicity for subtype 1) and 1 (D-Monotonicity for subtype 1), Default: 0}
+
+\item{lambda2}{sensitivity parameter for subtype 2. Can range between 0 (S-Monotonicity for subtype 2) and 1 (D-Monotonicity for subtype 2), Default: 0}
 
 \item{weight}{A vector of length n, holding weights to adjust for missing subtypes, Default: 1}
 
@@ -36,7 +42,7 @@ sface(
 
 }
 \description{
-FUNCTION_DESCRIPTION
+function to estimate the Subtype Free Average Causal Effect.
 }
 \details{
 DETAILS
