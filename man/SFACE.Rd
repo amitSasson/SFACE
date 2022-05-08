@@ -2,15 +2,38 @@
 % Please edit documentation in R/funcs.R
 \name{sface}
 \alias{sface}
-\title{sface}
+\title{FUNCTION_TITLE}
 \usage{
-sface(df)
+sface(
+  y,
+  A,
+  X = NULL,
+  subtype = c(1, 2),
+  scale = c("diff", "RR"),
+  method = c("stand", "IPTW", "DR"),
+  weights = NULL,
+  MultPer = 1
+)
 }
 \arguments{
-\item{df}{PARAM_DESCRIPTION}
+\item{y}{The categorical outcome vector of length n.  Must be encoded o for disease-free, 1 for the first subtype and 2 for the second subtype.}
+
+\item{A}{The treatment/expousre vector pf length n. Must be encoded 1 for treated and 0 for untreated.}
+
+\item{X}{The n × p-matrix of covariates X, Default: NULL}
+
+\item{subtype}{Indication of which subtype to estimate the SF-ACE of, Default: c(1, 2)}
+
+\item{scale}{Indication of weather the SF-ACE should be estimated on the difference or risk ratio scale, Default: c("diff", "RR")}
+
+\item{method}{Indication of which method to use when adjusting for covariates, Default: c("stand", "IPTW", "DR")}
+
+\item{weights}{A vector of length n, holding weights to adjust for missing subtypes, Default: NULL}
+
+\item{MultPer}{A numeric value indicating per how many people the effect sould be calculated on the difference scale, Default: 1}
 }
 \value{
-OUTPUT_DESCRIPTION
+
 }
 \description{
 FUNCTION_DESCRIPTION
@@ -19,11 +42,14 @@ FUNCTION_DESCRIPTION
 DETAILS
 }
 \examples{
-\dontrun{
-if(interactive()){
- #EXAMPLE1
- }
-}
+A <- rbinom(n = 1000, size = 1, prob = 0.5)
+X1 <- rbinom(n = 1000, size = 1, prob = 0.5)
+X2 <- rnorm(n = 1000, mean = 0, sd = 1)
+X <- matrix(c(X1,X2), nrow = 1000, byrow = FALSE)
+y <- sample(c(0,1,2), 1000, replace=TRUE, prob=c(0.8, 0.1, 0.1) )
+sface(y, A, X, subtype = 1, scale = "diff", method = "stand")
+
+
 }
 \seealso{
 \code{\link[nnet]{multinom}}
