@@ -11,7 +11,7 @@ sface(
   subtype = c(1, 2),
   scale = c("diff", "RR"),
   method = c("stand", "IPTW", "DR"),
-  weights = NULL,
+  weight = 1,
   MultPer = 1
 )
 }
@@ -28,7 +28,7 @@ sface(
 
 \item{method}{Indication of which method to use when adjusting for covariates, Default: c("stand", "IPTW", "DR")}
 
-\item{weights}{A vector of length n, holding weights to adjust for missing subtypes, Default: NULL}
+\item{weight}{A vector of length n, holding weights to adjust for missing subtypes, Default: 1}
 
 \item{MultPer}{A numeric value indicating per how many people the effect sould be calculated on the difference scale, Default: 1}
 }

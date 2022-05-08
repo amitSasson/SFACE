@@ -7,7 +7,7 @@
 #' @param subtype Indication of which subtype to estimate the SF-ACE of, Default: c(1, 2)
 #' @param scale Indication of weather the SF-ACE should be estimated on the difference or risk ratio scale, Default: c("diff", "RR")
 #' @param method Indication of which method to use when adjusting for covariates, Default: c("stand", "IPTW", "DR")
-#' @param weights A vector of length n, holding weights to adjust for missing subtypes, Default: NULL
+#' @param weight A vector of length n, holding weights to adjust for missing subtypes, Default: 1
 #' @param MultPer A numeric value indicating per how many people the effect sould be calculated on the difference scale, Default: 1
 #' @return
 #' @details DETAILS
@@ -31,11 +31,41 @@ sface <- function(y,
                   subtype = c(1,2),
                   scale = c("diff", "RR"),
                   method = c("stand", "IPTW", "DR"),
-                  weights = NULL,
+                  weight = 1,
                   MultPer=1)
 {
-  model <- nnet::multinom(y~A+X,
-                          trace = FALSE,
-                          weights = weights)
-  return(summary(model))
+  if(method == "stand")
+  {
+    df <- data.frame(y, A, X, weight)
+    fit_y_by_A_X <- nnet::multinom(y ~ A + X,
+                                   df,
+                                   trace = FALSE,
+                                   weights = weight)
+
+    df_treat <- df_untr <- df
+    df_treat$A <- 1
+    df_untr$A <- 0
+
+    pred_treat <- as.data.frame(predict(fit_y_by_A_X, newdata = df_treat, type = "probs"))
+    colnames(pred_treat) <-c("0","1", "2")
+    pred_untr <- as.data.frame(predict(fit_y_by_A_X, newdata = df_untr, type = "probs"))
+    colnames(pred_untr) <-c("0","1", "2")
+
+    self <- ifelse(subtype == 1, "1", "2")
+    other <- ifelse(subtype == 1, "2", "1")
+
+    p_Y11_A1 <- sum(df$weight*pred_treat[,self])/sum(df$weight)
+    p_Y11_A0 <- sum(df$weight*pred_untr[,self])/sum(df$weight)
+
+    if(scale == "diff")
+    {
+      p_Y12_A1 <- sum(df$weight*pred_treat[,other])/sum(df$weight)
+      return(MultPer*(p_Y11_A1 - p_Y11_A0)/(1-p_Y12_A1))
+    }
+
+    if(scale == "RR")
+    {
+      return(p_Y11_A1/p_Y11_A0)
+    }
+  }
 }
