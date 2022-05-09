@@ -1,5 +1,5 @@
 
-#' @title sface
+#' @title Subtype Free Average Causal Effect
 #' @description function to estimate the Subtype Free Average Causal Effect.
 #' @param y The categorical outcome vector of length n.  Must be encoded o for disease-free, 1 for the first subtype and 2 for the second subtype.
 #' @param A The treatment/expousre vector pf length n. Must be encoded 1 for treated and 0 for untreated.
@@ -29,7 +29,7 @@
 #' @importFrom nnet multinom
 sface <- function(y,
                   A,
-                  X = NULL,
+                  X = 1,
                   subtype = c(1,2),
                   scale = c("diff", "RR"),
                   method = c("stand", "IPTW", "DR"),
@@ -48,7 +48,7 @@ sface <- function(y,
   if(any(weight <= 0)) {stop("weights can't be negative")}
   if(lambda1 < 0 | lambda1 > 1) {stop("Lambda 1 should be between 0 and 1")}
   if(lambda2 < 0 | lambda2 > 1) {stop("Lambda 2 should be between 0 and 1")}
-  if(MultPer <= 0 ) {stop("MultPer can be negative")}
+  if(MultPer <= 0 ) {stop("MultPer can't be negative")}
 
 
   #calculate the expectations needed using stand
@@ -169,7 +169,7 @@ sface <- function(y,
 
 
 
-#' @title theta_sface
+#' @title Difference between the Subtype Free Average Causal Effects
 #' @description function that estimates the difference between the SF-ACE of the first subtype and the SF-ACE of the second subtype
 #' @param y The categorical outcome vector of length n.  Must be encoded o for disease-free, 1 for the first subtype and 2 for the second subtype.
 #' @param A The treatment/expousre vector pf length n. Must be encoded 1 for treated and 0 for untreated.
