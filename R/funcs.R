@@ -38,6 +38,19 @@ sface <- function(y,
                   weight = 1,
                   MultPer=1)
 {
+  #checking the input:
+  if(length(A) != length(y)) {stop("A and y are of different lenghts")}
+  if(!all(A %in% c(0,1))) {stop("A can only contain 0 and 1 values")}
+  if(!all(y %in% c(0,1,2))) {stop("A can only contain 0, 1 and 2 values")}
+  if(!(subtype %in% c(1,2))) {stop("The subtype should be 1 or 2")}
+  if(!(scale %in% c("diff", "RR"))) {stop("The scale should be 'diff' or 'RR' ")}
+  if(!(method %in% c("stand", "IPTW", "DR"))) {stop("The scale should be 'stand','IPTW', or 'DR' ")}
+  if(any(weight <= 0)) {stop("weights can't be negative")}
+  if(lambda1 < 0 | lambda1 > 1) {stop("Lambda 1 should be between 0 and 1")}
+  if(lambda2 < 0 | lambda2 > 1) {stop("Lambda 2 should be between 0 and 1")}
+  if(MultPer <= 0 ) {stop("MultPer can be negative")}
+
+
   #calculate the expectations needed using stand
   if(method == "stand")
   {
@@ -153,6 +166,8 @@ sface <- function(y,
   if(scale == "RR")
   {return((p_Y11_A1-lambda2*p_Y21_A0)/((1-lambda1)*p_Y11_A0))}
 }
+
+
 
 #' @title theta_sface
 #' @description function that estimates the difference between the SF-ACE of the first subtype and the SF-ACE of the second subtype
