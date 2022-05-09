@@ -38,6 +38,7 @@ sface <- function(y,
                   weight = 1,
                   MultPer=1)
 {
+  #calculate the expectations needed using stand
   if(method == "stand")
   {
     df <- data.frame(y, A, X, weight)
@@ -58,20 +59,17 @@ sface <- function(y,
     self <- ifelse(subtype == 1, "1", "2")
     other <- ifelse(subtype == 1, "2", "1")
 
-    p_Y11_A1 <- sum(df$weight*pred_treat[,self])/sum(df$weight)
-    p_Y11_A0 <- sum(df$weight*pred_untr[,self])/sum(df$weight)
+    n_w <- sum(df$weight)
+
+    p_Y11_A1 <- sum(df$weight*pred_treat[,self])/n_w
+    p_Y21_A0 <- sum(df$weight*pred_untr[,other])/n_w
+    p_Y11_A0 <- sum(df$weight*pred_untr[,self])/n_w
 
     if(scale == "diff")
-    {
-      p_Y12_A1 <- sum(df$weight*pred_treat[,other])/sum(df$weight)
-      return(MultPer*(p_Y11_A1 - p_Y11_A0)/(1-p_Y12_A1))
-    }
-
-    if(scale == "RR")
-    {
-      return(p_Y11_A1/p_Y11_A0)
-    }
+    {p_Y20_A1 <- 1-sum(df$weight*pred_treat[,other])/n_w}
   }
+
+  #calculate the expectations needed using IPTW
   if(method == "IPTW")
   {
     df <- data.frame(y, A, X, weight)
@@ -90,20 +88,21 @@ sface <- function(y,
     other <- ifelse(subtype == 1, "2", "1")
 
     df$w_A <- ifelse(df$A == 1, pr_A_1/pred_A, (1-pr_A_1)/(1-pred_A) ) #Stabilized weights
+
+    #q99 <- quantile(df$w_A, .99)
+    #df$w_A <- ifelse(df$w_A > q99, q99, df$w_A)
+
+    n_w <- sum(df$weight)
+
     p_Y11_A1 <- sum(df$weight*df$w_A*df$A*df[,self])/sum(df$weight*df$A)
     p_Y11_A0 <- sum(df$weight*df$w_A*(1-df$A)*df[,self])/sum(df$weight*(1-df$A))
+    p_Y21_A0 <- sum(df$weight*df$w_A*(1-df$A)*df[,other])/sum(df$weight*(1-df$A))
 
     if(scale == "diff")
-    {
-      p_Y12_A1 <- sum(df$weight*df$w_A*df$A*df[,other])/sum(df$weight*df$A)
-      return(MultPer*(p_Y11_A1 - p_Y11_A0)/(1-p_Y12_A1))
-    }
-
-    if(scale == "RR")
-    {
-      return(p_Y11_A1/p_Y11_A0)
-    }
+    {p_Y20_A1 <- 1- sum(df$weight*df$w_A*df$A*df[,other])/sum(df$weight*df$A)}
   }
+
+  #calculate the expectations needed using DR
   if(method == "DR")
   {
     df <- data.frame(y, A, X, weight)
@@ -136,18 +135,23 @@ sface <- function(y,
     self <- ifelse(subtype == 1, "1", "2")
     other <- ifelse(subtype == 1, "2", "1")
 
-    p_Y11_A1 <- sum(df$weight*(df$A*df[,self]/(pred_A) - ((df$A-pred_A)*pred_treat[,self])/pred_A))/sum(df$weight)
-    p_Y11_A0 <- sum(df$weight*((1-df$A)*df[,self]/(1-pred_A) + ((df$A-pred_A)*pred_untr[,self])/(1-pred_A)))/sum(df$weight)
+    n_w <- sum(df$weight)
+
+    p_Y11_A1 <- sum(df$weight*(df$A*df[,self]/(pred_A) - ((df$A-pred_A)*pred_treat[,self])/pred_A))/n_w
+    p_Y11_A0 <- sum(df$weight*((1-df$A)*df[,self]/(1-pred_A) + ((df$A-pred_A)*pred_untr[,self])/(1-pred_A)))/n_w
+    p_Y21_A0 <- sum(df$weight*((1-df$A)*df[,other]/(1-pred_A) + ((df$A-pred_A)*pred_untr[,other])/(1-pred_A)))/n_w
 
     if(scale == "diff")
-    {
-      p_Y12_A1 <- sum(df$weight*(df$A*df[,other]/(pred_A) - ((df$A-pred_A)*pred_treat[,other])/pred_A))/sum(df$weight)
-      return(MultPer*(p_Y11_A1 - p_Y11_A0)/(1-p_Y12_A1))
-    }
+    {p_Y20_A1 <- 1 - sum(df$weight*(df$A*df[,other]/(pred_A) - ((df$A-pred_A)*pred_treat[,other])/pred_A))/n_w}
 
-    if(scale == "RR")
-    {
-      return(p_Y11_A1/p_Y11_A0)
-    }
   }
+
+  #return the effects
+  if(scale == "diff")
+  {return(MultPer*(p_Y11_A1-lambda2*p_Y21_A0+(lambda1-1)*p_Y11_A0)/(p_Y20_A1-lambda2*p_Y21_A0))}
+
+  if(scale == "RR")
+  {return((p_Y11_A1-lambda2*p_Y21_A0)/((1-lambda1)*p_Y11_A0))}
 }
+
+
