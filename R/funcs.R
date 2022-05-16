@@ -27,9 +27,20 @@
 #' @rdname sface
 #' @export
 #' @importFrom nnet multinom
-sface <- function(y,
-                  A,
-                  X = 1,
+sface(stand_formula = y ~ A + X1 + X2,
+      iptw_formula = A ~ X1 + X2,
+      exposure = "A",
+      outcome = "y",
+      df = df,
+      subtype = 1,
+      scale = "diff",
+      method = "DR",
+      weight = "weight")
+sface <- function(stand_formula,
+                  iptw_formula,
+                  exposure,
+                  outcome,
+                  df,
                   subtype = c(1,2),
                   scale = c("diff", "RR"),
                   method = c("stand", "IPTW", "DR"),
@@ -39,132 +50,129 @@ sface <- function(y,
                   MultPer=1)
 {
   #checking the input:
-  if(length(A) != length(y)) {stop("A and y are of different lenghts")}
-  if(!all(A %in% c(0,1))) {stop("A can only contain 0 and 1 values")}
-  if(!all(y %in% c(0,1,2))) {stop("A can only contain 0, 1 and 2 values")}
-  if(!(subtype %in% c(1,2))) {stop("The subtype should be 1 or 2")}
-  if(!(scale %in% c("diff", "RR"))) {stop("The scale should be 'diff' or 'RR' ")}
-  if(!(method %in% c("stand", "IPTW", "DR"))) {stop("The scale should be 'stand','IPTW', or 'DR' ")}
-  if(any(weight <= 0)) {stop("weights can't be negative")}
-  if(lambda1 < 0 | lambda1 > 1) {stop("Lambda 1 should be between 0 and 1")}
-  if(lambda2 < 0 | lambda2 > 1) {stop("Lambda 2 should be between 0 and 1")}
-  if(MultPer <= 0 ) {stop("MultPer can't be negative")}
+  #if(length(exposure) != length(y)) {stop("exposure and y are of different lenghts")}
+  #if(!all(exposure %in% c(0,1))) {stop("exposure can only contain 0 and 1 values")}
+  #if(!all(y %in% c(0,1,2))) {stop("y can only contain 0, 1 and 2 values")}
+  #if(!(subtype %in% c(1,2))) {stop("The subtype should be 1 or 2")}
+  #if(!all(scale %in% c("diff", "RR"))) {stop("The scale should be 'diff' or 'RR' ")}
+  #if(!all(method %in% c("stand", "IPTW", "DR"))) {stop("The scale should be 'stand','IPTW', or 'DR' ")}
+  #if(any(weight <= 0)) {stop("weights can't be negative")}
+  #if(lambda1 < 0 | lambda1 > 1) {stop("Lambda 1 should be between 0 and 1")}
+  #if(lambda2 < 0 | lambda2 > 1) {stop("Lambda 2 should be between 0 and 1")}
+  #if(MultPer <= 0 ) {stop("MultPer can't be negative")}
 
 
   #calculate the expectations needed using stand
   if(method == "stand")
   {
-    df <- data.frame(y, A, X, weight)
-    fit_y_by_A_X <- nnet::multinom(y ~ A + X,
+    fit_y_by_exposure_X <- nnet::multinom(stand_formula,
                                    df,
                                    trace = FALSE,
                                    weights = weight)
 
     df_treat <- df_untr <- df
-    df_treat$A <- 1
-    df_untr$A <- 0
+    df_treat[,exposure] <- 1
+    df_untr[,exposure] <- 0
 
-    pred_treat <- as.data.frame(predict(fit_y_by_A_X, newdata = df_treat, type = "probs"))
+    pred_treat <- as.data.frame(predict(fit_y_by_exposure_X, newdata = df_treat, type = "probs"))
     colnames(pred_treat) <-c("0","1", "2")
-    pred_untr <- as.data.frame(predict(fit_y_by_A_X, newdata = df_untr, type = "probs"))
+    pred_untr <- as.data.frame(predict(fit_y_by_exposure_X, newdata = df_untr, type = "probs"))
     colnames(pred_untr) <-c("0","1", "2")
 
     self <- ifelse(subtype == 1, "1", "2")
     other <- ifelse(subtype == 1, "2", "1")
 
-    n_w <- sum(df$weight)
+    n_w <- sum(df[,weight])
 
-    p_Y11_A1 <- sum(df$weight*pred_treat[,self])/n_w
-    p_Y21_A0 <- sum(df$weight*pred_untr[,other])/n_w
-    p_Y11_A0 <- sum(df$weight*pred_untr[,self])/n_w
+    p_Y11_exposure1 <- sum(df[,weight]*pred_treat[,self])/n_w
+    p_Y21_exposure0 <- sum(df[,weight]*pred_untr[,other])/n_w
+    p_Y11_exposure0 <- sum(df[,weight]*pred_untr[,self])/n_w
 
     if(scale == "diff")
-    {p_Y20_A1 <- 1-sum(df$weight*pred_treat[,other])/n_w}
+    {p_Y20_exposure1 <- 1-sum(df[,weight]*pred_treat[,other])/n_w}
   }
 
   #calculate the expectations needed using IPTW
   if(method == "IPTW")
   {
-    df <- data.frame(y, A, X, weight)
-    df$'1' <- ifelse(y == 1 ,1, 0)
-    df$'2' <- ifelse(y == 2, 1, 0)
+    df$'1' <- ifelse(df[,outcome] == 1 ,1, 0)
+    df$'2' <- ifelse(df[,outcome] == 2, 1, 0)
 
-    fit_A_by_X <- glm(A ~ X,
+    fit_exposure_by_X <- glm(iptw_formula,
                       df,
                       family = "binomial",
                       weights = weight)
-    pred_A <-  predict(fit_A_by_X, type = "response")
-    pr_A_1 <- mean(df$A)
+    pred_exposure <-  predict(fit_exposure_by_X, type = "response")
+    pr_exposure_1 <- mean(df[,exposure])
     n <- nrow(df)
 
     self <- ifelse(subtype == 1, "1", "2")
     other <- ifelse(subtype == 1, "2", "1")
 
-    df$w_A <- ifelse(df$A == 1, pr_A_1/pred_A, (1-pr_A_1)/(1-pred_A) ) #Stabilized weights
+    df$w_exposure <- ifelse(df[,exposure] == 1, pr_exposure_1/pred_exposure, (1-pr_exposure_1)/(1-pred_exposure) ) #Stabilized weights
 
-    #q99 <- quantile(df$w_A, .99)
-    #df$w_A <- ifelse(df$w_A > q99, q99, df$w_A)
+    #q99 <- quantile(df$w_exposure, .99)
+    #df$w_exposure <- ifelse(df$w_exposure > q99, q99, df$w_exposure)
 
-    n_w <- sum(df$weight)
+    n_w <- sum(df[,weight])
 
-    p_Y11_A1 <- sum(df$weight*df$w_A*df$A*df[,self])/sum(df$weight*df$A)
-    p_Y11_A0 <- sum(df$weight*df$w_A*(1-df$A)*df[,self])/sum(df$weight*(1-df$A))
-    p_Y21_A0 <- sum(df$weight*df$w_A*(1-df$A)*df[,other])/sum(df$weight*(1-df$A))
+    p_Y11_exposure1 <- sum(df[,weight]*df$w_exposure*df[,exposure]*df[,self])/sum(df[,weight]*df[,exposure])
+    p_Y11_exposure0 <- sum(df[,weight]*df$w_exposure*(1-df[,exposure])*df[,self])/sum(df[,weight]*(1-df[,exposure]))
+    p_Y21_exposure0 <- sum(df[,weight]*df$w_exposure*(1-df[,exposure])*df[,other])/sum(df[,weight]*(1-df[,exposure]))
 
     if(scale == "diff")
-    {p_Y20_A1 <- 1- sum(df$weight*df$w_A*df$A*df[,other])/sum(df$weight*df$A)}
+    {p_Y20_exposure1 <- 1- sum(df[,weight]*df$w_exposure*df[,exposure]*df[,other])/sum(df[,weight]*df[,exposure])}
   }
 
   #calculate the expectations needed using DR
   if(method == "DR")
   {
-    df <- data.frame(y, A, X, weight)
-    df$'1' <- ifelse(y == 1 ,1, 0)
-    df$'2' <- ifelse(y == 2, 1, 0)
+    df$'1' <- ifelse(df[,outcome] == 1 ,1, 0)
+    df$'2' <- ifelse(df[,outcome] == 2, 1, 0)
 
     #model A ~ X
-    fit_A_by_X <- glm(A ~ X,
+    fit_exposure_by_X <- glm(iptw_formula,
                       df,
                       family = "binomial",
                       weights = weight)
 
-    pred_A <-  predict(fit_A_by_X, type = "response")
+    pred_exposure <-  predict(fit_exposure_by_X, type = "response")
 
     #model y ~ A + X
-    fit_y_by_A_X <- multinom(y ~ A + X,
+    fit_y_by_exposure_X <- multinom(stand_formula,
                              df,
                              trace = FALSE,
                              weights = weight)
 
     df_treat <- df_untr <- df
-    df_treat$A <- 1
-    df_untr$A <- 0
+    df_treat[,exposure] <- 1
+    df_untr[,exposure] <- 0
 
-    pred_treat <- as.data.frame(predict(fit_y_by_A_X, newdata = df_treat, type = "probs"))
+    pred_treat <- as.data.frame(predict(fit_y_by_exposure_X, newdata = df_treat, type = "probs"))
     colnames(pred_treat) <-c("0","1", "2")
-    pred_untr <- as.data.frame(predict(fit_y_by_A_X, newdata = df_untr, type = "probs"))
+    pred_untr <- as.data.frame(predict(fit_y_by_exposure_X, newdata = df_untr, type = "probs"))
     colnames(pred_untr) <-c("0","1", "2")
 
     self <- ifelse(subtype == 1, "1", "2")
     other <- ifelse(subtype == 1, "2", "1")
 
-    n_w <- sum(df$weight)
+    n_w <- sum(df[,weight])
 
-    p_Y11_A1 <- sum(df$weight*(df$A*df[,self]/(pred_A) - ((df$A-pred_A)*pred_treat[,self])/pred_A))/n_w
-    p_Y11_A0 <- sum(df$weight*((1-df$A)*df[,self]/(1-pred_A) + ((df$A-pred_A)*pred_untr[,self])/(1-pred_A)))/n_w
-    p_Y21_A0 <- sum(df$weight*((1-df$A)*df[,other]/(1-pred_A) + ((df$A-pred_A)*pred_untr[,other])/(1-pred_A)))/n_w
+    p_Y11_exposure1 <- sum(df[,weight]*(df[,exposure]*df[,self]/(pred_exposure) - ((df[,exposure]-pred_exposure)*pred_treat[,self])/pred_exposure))/n_w
+    p_Y11_exposure0 <- sum(df[,weight]*((1-df[,exposure])*df[,self]/(1-pred_exposure) + ((df[,exposure]-pred_exposure)*pred_untr[,self])/(1-pred_exposure)))/n_w
+    p_Y21_exposure0 <- sum(df[,weight]*((1-df[,exposure])*df[,other]/(1-pred_exposure) + ((df[,exposure]-pred_exposure)*pred_untr[,other])/(1-pred_exposure)))/n_w
 
     if(scale == "diff")
-    {p_Y20_A1 <- 1 - sum(df$weight*(df$A*df[,other]/(pred_A) - ((df$A-pred_A)*pred_treat[,other])/pred_A))/n_w}
+    {p_Y20_exposure1 <- 1 - sum(df[,weight]*(df[,exposure]*df[,other]/(pred_exposure) - ((df[,exposure]-pred_exposure)*pred_treat[,other])/pred_exposure))/n_w}
 
   }
 
   #return the effects
   if(scale == "diff")
-  {return(MultPer*(p_Y11_A1-lambda2*p_Y21_A0+(lambda1-1)*p_Y11_A0)/(p_Y20_A1-lambda2*p_Y21_A0))}
+  {return(MultPer*(p_Y11_exposure1-lambda2*p_Y21_exposure0+(lambda1-1)*p_Y11_exposure0)/(p_Y20_exposure1-lambda2*p_Y21_exposure0))}
 
   if(scale == "RR")
-  {return((p_Y11_A1-lambda2*p_Y21_A0)/((1-lambda1)*p_Y11_A0))}
+  {return((p_Y11_exposure1-lambda2*p_Y21_exposure0)/((1-lambda1)*p_Y11_exposure0))}
 }
 
 
