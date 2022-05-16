@@ -1,16 +1,16 @@
 
 #' @title Subtype Free Average Causal Effect
-#' @description function to estimate the Subtype Free Average Causal Effect.
-#' @param y The categorical outcome vector of length n.  Must be encoded o for disease-free, 1 for the first subtype and 2 for the second subtype.
+#' @description A function to estimate the Subtype Free Average Causal Effect.
+#' @param y The categorical outcome vector of length n.  Must be encoded 0 for disease-free, 1 for the first subtype and 2 for the second subtype.
 #' @param A The treatment/expousre vector pf length n. Must be encoded 1 for treated and 0 for untreated.
 #' @param X The n × p-matrix of covariates X, Default: NULL
 #' @param subtype Should the SF-ACE be estimated for subtype 1 or subtype 2
-#' @param scale Indication of weather the SF-ACE should be estimated on the difference or risk ratio scale.
-#' @param method Indication of which method to use when adjusting for covariates, possibilities inclued standardization ("stand"), Inverse Probability Treatment Weighting ("IPTW"), and doubly robust estimation ("DR")
+#' @param scale Should the SF-ACE be estimated on the difference or risk ratio scale.
+#' @param method Which method to use when adjusting for covariates, possibilities include standardization ("stand"), Inverse Probability Treatment Weighting ("IPTW"), and doubly robust estimation ("DR")
 #' @param lambda1 sensitivity parameter for subtype 1. Can range between 0 (S-Monotonicity for subtype 1) and 1 (D-Monotonicity for subtype 1), Default: 0
 #' @param lambda2 sensitivity parameter for subtype 2. Can range between 0 (S-Monotonicity for subtype 2) and 1 (D-Monotonicity for subtype 2), Default: 0
-#' @param weight A vector of length n, holding weights to adjust for missing subtypes, Default: 1
-#' @param MultPer A numeric value indicating per how many people the effect sould be calculated on the difference scale, Default: 1
+#' @param weight A numerical vector of length n, holding weights to adjust for missing subtypes, Default: 1
+#' @param MultPer A numeric value indicating per how many people the effect should be calculated on the difference scale, Default: 1
 #' @return
 #' @details DETAILS
 #' @examples
@@ -170,16 +170,16 @@ sface <- function(y,
 
 
 #' @title Difference between the Subtype Free Average Causal Effects
-#' @description function that estimates the difference between the SF-ACE of the first subtype and the SF-ACE of the second subtype
-#' @param y The categorical outcome vector of length n.  Must be encoded o for disease-free, 1 for the first subtype and 2 for the second subtype.
+#' @description A function that estimates the difference between the SF-ACE of the first subtype and the SF-ACE of the second subtype
+#' @param y The categorical outcome vector of length n.  Must be encoded 0 for disease-free, 1 for the first subtype and 2 for the second subtype.
 #' @param A The treatment/expousre vector pf length n. Must be encoded 1 for treated and 0 for untreated.
 #' @param X The n × p-matrix of covariates X, Default: NULL
-#' @param scale Indication of weather the SF-ACE should be estimated on the difference or risk ratio scale.
-#' @param method Indication of which method to use when adjusting for covariates, possibilities inclued standardization ("stand"), Inverse Probability Treatment Weighting ("IPTW"), and doubly robust estimation ("DR")
+#' @param scale Should the SF-ACE be estimated on the difference or risk ratio scale.
+#' @param method Which method to use when adjusting for covariates, possibilities include standardization ("stand"), Inverse Probability Treatment Weighting ("IPTW"), and doubly robust estimation ("DR")
 #' @param lambda1 sensitivity parameter for subtype 1. Can range between 0 (S-Monotonicity for subtype 1) and 1 (D-Monotonicity for subtype 1), Default: 0
 #' @param lambda2 sensitivity parameter for subtype 2. Can range between 0 (S-Monotonicity for subtype 2) and 1 (D-Monotonicity for subtype 2), Default: 0
-#' @param weight A vector of length n, holding weights to adjust for missing subtypes, Default: 1
-#' @param MultPer A numeric value indicating per how many people the effect sould be calculated on the difference scale, Default: 1
+#' @param weight A numerical vector of length n, holding weights to adjust for missing subtypes, Default: 1
+#' @param MultPer A numeric value indicating per how many people the effect should be calculated on the difference scale, Default: 1
 #' @return
 #' @details
 #' @examples
