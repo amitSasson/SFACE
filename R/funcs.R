@@ -57,7 +57,7 @@ sface <- function(stand_formula,
                   MultPer=1)
 {
   #checking the input:
-  #if(length(exposure) != length(y)) {stop("exposure and y are of different lenghts")}
+  #if(length(exposure) != length(y)) {stop("exposure and y are of different lengthts")}
   #if(!all(exposure %in% c(0,1))) {stop("exposure can only contain 0 and 1 values")}
   #if(!all(y %in% c(0,1,2))) {stop("y can only contain 0, 1 and 2 values")}
   #if(!(subtype %in% c(1,2))) {stop("The subtype should be 1 or 2")}
@@ -116,7 +116,18 @@ sface <- function(stand_formula,
       if("diff" %in% scale )
       {
         p_Y20_exposure1 <- 1-sum(df[,weight]*pred_treat[,other])/n_w
-        sface_list[["diff"]][["stand"]][[current_subtype]] <- MultPer*(p_Y11_exposure1-lambda2*p_Y21_exposure0+(lambda1-1)*p_Y11_exposure0)/(p_Y20_exposure1-lambda2*p_Y21_exposure0)
+        estiamtors <- outer(X = lambda1,
+                            Y = lambda2,
+                            FUN = diff_calc,
+                            p_Y11_exposure1,
+                            p_Y21_exposure0,
+                            p_Y11_exposure0,
+                            p_Y20_exposure1,
+                            MultPer)
+        if(length(lambda1) > 1) {rownames(estiamtors) <- lambda1}
+        if(length(lambda2) > 1) {colnames(estiamtors) <- lambda2}
+        if(length(lambda1) == 1 & length(lambda2) == 1) {estiamtors <- c(estiamtors)}
+        sface_list[["diff"]][["stand"]][[current_subtype]] <- estiamtors
       if(length(sface_list[["diff"]][["stand"]]) == 2)
       {
         sface_list[["diff"]][["stand"]][["theta"]] <- sface_list[["diff"]][["stand"]][["1"]]-sface_list[["diff"]][["stand"]][["2"]]
@@ -125,7 +136,18 @@ sface <- function(stand_formula,
 
       if("RR" %in% scale )
       {
-        sface_list[["RR"]][["stand"]][[current_subtype]] <- (p_Y11_exposure1-lambda2*p_Y21_exposure0)/((1-lambda1)*p_Y11_exposure0)
+        estiamtors <- outer(X = lambda1,
+                            Y = lambda2,
+                            FUN = RR_calc,
+                            p_Y11_exposure1,
+                            p_Y21_exposure0,
+                            p_Y11_exposure0)
+        if(length(lambda1) > 1) {rownames(estiamtors) <- lambda1}
+        if(length(lambda2) > 1) {colnames(estiamtors) <- lambda2}
+        if(length(lambda1) == 1 & length(lambda2) == 1) {estiamtors <- c(estiamtors)}
+
+        sface_list[["RR"]][["stand"]][[current_subtype]] <- estiamtors
+
         if(length(sface_list[["RR"]][["stand"]]) == 2)
         {
           sface_list[["RR"]][["stand"]][["theta"]] <- sface_list[["RR"]][["stand"]][["1"]]-sface_list[["RR"]][["stand"]][["2"]]
@@ -158,7 +180,19 @@ sface <- function(stand_formula,
       if("diff" %in% scale)
       {
         p_Y20_exposure1 <- 1- sum(df[,weight]*df$w_exposure*df[,exposure]*df[,other])/sum(df[,weight]*df[,exposure])
-        sface_list[["diff"]][["IPTW"]][[current_subtype]] <- MultPer*(p_Y11_exposure1-lambda2*p_Y21_exposure0+(lambda1-1)*p_Y11_exposure0)/(p_Y20_exposure1-lambda2*p_Y21_exposure0)
+        estiamtors <- outer(X = lambda1,
+                            Y = lambda2,
+                            FUN = diff_calc,
+                            p_Y11_exposure1,
+                            p_Y21_exposure0,
+                            p_Y11_exposure0,
+                            p_Y20_exposure1,
+                            MultPer)
+        if(length(lambda1) > 1) {rownames(estiamtors) <- lambda1}
+        if(length(lambda2) > 1) {colnames(estiamtors) <- lambda2}
+        if(length(lambda1) == 1 & length(lambda2) == 1) {estiamtors <- c(estiamtors)}
+
+        sface_list[["diff"]][["IPTW"]][[current_subtype]] <- estiamtors
         if(length(sface_list[["diff"]][["IPTW"]]) == 2)
         {
           sface_list[["diff"]][["IPTW"]][["theta"]] <- sface_list[["diff"]][["IPTW"]][["1"]]-sface_list[["diff"]][["IPTW"]][["2"]]
@@ -167,7 +201,17 @@ sface <- function(stand_formula,
 
       if("RR" %in% scale )
       {
-        sface_list[["RR"]][["IPTW"]][[current_subtype]] <- (p_Y11_exposure1-lambda2*p_Y21_exposure0)/((1-lambda1)*p_Y11_exposure0)
+        estiamtors <- outer(X = lambda1,
+                            Y = lambda2,
+                            FUN = RR_calc,
+                            p_Y11_exposure1,
+                            p_Y21_exposure0,
+                            p_Y11_exposure0)
+        if(length(lambda1) > 1) {rownames(estiamtors) <- lambda1}
+        if(length(lambda2) > 1) {colnames(estiamtors) <- lambda2}
+        if(length(lambda1) == 1 & length(lambda2) == 1) {estiamtors <- c(estiamtors)}
+
+        sface_list[["RR"]][["IPTW"]][[current_subtype]] <- estiamtors
         if(length(sface_list[["RR"]][["IPTW"]]) == 2)
         {
           sface_list[["RR"]][["IPTW"]][["theta"]] <- sface_list[["RR"]][["IPTW"]][["1"]]-sface_list[["RR"]][["IPTW"]][["2"]]
@@ -190,7 +234,19 @@ sface <- function(stand_formula,
       if("diff" %in% scale )
       {
         p_Y20_exposure1 <- 1 - sum(df[,weight]*(df[,exposure]*df[,other]/(pred_exposure) - ((df[,exposure]-pred_exposure)*pred_treat[,other])/pred_exposure))/n_w
-        sface_list[["diff"]][["DR"]][[current_subtype]] <- MultPer*(p_Y11_exposure1-lambda2*p_Y21_exposure0+(lambda1-1)*p_Y11_exposure0)/(p_Y20_exposure1-lambda2*p_Y21_exposure0)
+        estiamtors <- outer(X = lambda1,
+                            Y = lambda2,
+                            FUN = diff_calc,
+                            p_Y11_exposure1,
+                            p_Y21_exposure0,
+                            p_Y11_exposure0,
+                            p_Y20_exposure1,
+                            MultPer)
+        if(length(lambda1) > 1) {rownames(estiamtors) <- lambda1}
+        if(length(lambda2) > 1) {colnames(estiamtors) <- lambda2}
+        if(length(lambda1) == 1 & length(lambda2) == 1) {estiamtors <- c(estiamtors)}
+
+        sface_list[["diff"]][["DR"]][[current_subtype]] <- estiamtors
         if(length(sface_list[["diff"]][["DR"]]) == 2)
         {
           sface_list[["diff"]][["DR"]][["theta"]] <- sface_list[["diff"]][["DR"]][["1"]]-sface_list[["diff"]][["DR"]][["2"]]
@@ -199,7 +255,16 @@ sface <- function(stand_formula,
 
       if("RR" %in% scale )
       {
-        sface_list[["RR"]][["DR"]][[current_subtype]] <- (p_Y11_exposure1-lambda2*p_Y21_exposure0)/((1-lambda1)*p_Y11_exposure0)
+        estiamtors <- outer(X = lambda1,
+                            Y = lambda2,
+                            FUN = RR_calc,
+                            p_Y11_exposure1,
+                            p_Y21_exposure0,
+                            p_Y11_exposure0)
+        if(length(lambda1) > 1) {rownames(estiamtors) <- lambda1}
+        if(length(lambda2) > 1) {colnames(estiamtors) <- lambda2}
+        if(length(lambda1) == 1 & length(lambda2) == 1) {estiamtors <- c(estiamtors)}
+        sface_list[["RR"]][["DR"]][[current_subtype]] <- estiamtors
         if(length(sface_list[["RR"]][["DR"]]) == 2)
         {
           sface_list[["RR"]][["DR"]][["theta"]] <- sface_list[["RR"]][["DR"]][["1"]]-sface_list[["RR"]][["DR"]][["2"]]
@@ -218,19 +283,54 @@ sface <- function(stand_formula,
   if ("diff" %in% scale)
   {
     cat("On the difference scale:","\n")
-    diff_table <- do.call(rbind.data.frame, sface_list[["diff"]])
-    colnames(diff_table) <- subtype
-    print(diff_table)
-    cat("\n")
+    for(m in method)
+    {
+      cat("Using ", as.character(m),",", "\n")
+      diff_table <- do.call(cbind.data.frame, sface_list[["diff"]][[m]])
+      colnames(diff_table) <- subtype
+      print(diff_table)
+      cat("\n")
+    }
   }
+  cat("\n")
   if ("RR" %in% scale)
-  {
     cat("On the Risk Ratio scale:","\n")
-    RR_table <- do.call(rbind.data.frame, sface_list[["RR"]])
-    colnames(RR_table) <- subtype
-    print(RR_table)
+  {
+    for(m in method)
+    {
+      cat("Using ", as.character(m),":", "\n")
+      diff_table <- do.call(cbind.data.frame, sface_list[["RR"]][[m]])
+      colnames(diff_table) <- subtype
+      print(diff_table)
+      cat("\n")
+    }
   }
   return(invisible(sface_list))
 }
 
 
+
+diff_calc <- function(lambda1, lambda2, p_Y11_exposure1,p_Y21_exposure0, p_Y11_exposure0, p_Y20_exposure1, MultPer)
+{
+  MultPer*(p_Y11_exposure1-lambda2*p_Y21_exposure0+(lambda1-1)*p_Y11_exposure0)/(p_Y20_exposure1-lambda2*p_Y21_exposure0)
+}
+
+
+RR_calc <- function(lambda1, lambda2, p_Y11_exposure1,p_Y21_exposure0, p_Y11_exposure0)
+{
+  (p_Y11_exposure1-lambda2*p_Y21_exposure0)/((1-lambda1)*p_Y11_exposure0)
+}
+
+outer(X  = lambda1,
+      Y  = lambda2,
+      FUN = diff_calc,
+      p_Y11_exposure1 = 0.8,
+      p_Y21_exposure0 = 0.7,
+      p_Y11_exposure0 = 0.2,
+      p_Y20_exposure1 = 0.34,
+      MultPer = 1)
+
+x <- c(A=1,B=2,C=3)
+y <- c(A=4,B=5,C=6)
+f <- function(x,y,z) {return(x+y+z)}
+outer(x,y, FUN=f, z=1)
