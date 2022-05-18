@@ -32,9 +32,16 @@ sface(stand_formula = y ~ A + X1 + X2,
       exposure = "A",
       outcome = "y",
       df = df,
-      subtype = 1,
-      scale = "diff",
+      subtype = c(1),
+      scale = c("diff","RR"),
       method = c("stand", "IPTW"),
+      weight = "weight")
+sface(stand_formula = y ~ A + X1 + X2,
+      iptw_formula = A ~ X1 + X2,
+      exposure = "A",
+      outcome = "y",
+      df = df,
+      subtype = 1,
       weight = "weight")
 sface <- function(stand_formula,
                   iptw_formula,
@@ -69,7 +76,16 @@ sface <- function(stand_formula,
                                           df,
                                           trace = FALSE,
                                           weights = weight)
+    df_treat <- df_untr <- df
+    df_treat[,exposure] <- 1
+    df_untr[,exposure] <- 0
 
+    pred_treat <- as.data.frame(predict(fit_y_by_exposure_X, newdata = df_treat, type = "probs"))
+    colnames(pred_treat) <-c("0","1", "2")
+    pred_untr <- as.data.frame(predict(fit_y_by_exposure_X, newdata = df_untr, type = "probs"))
+    colnames(pred_untr) <-c("0","1", "2")
+
+    n_w <- sum(df[,weight])
   }
 
   if (any(c("IPTW","DR") %in% method))
@@ -78,50 +94,51 @@ sface <- function(stand_formula,
                              df,
                              family = "binomial",
                              weights = weight)
+    df$'1' <- ifelse(df[,outcome] == 1 ,1, 0)
+    df$'2' <- ifelse(df[,outcome] == 2, 1, 0)
+
+    pred_exposure <-  predict(fit_exposure_by_X, type = "response")
+
   }
   #calculate the expectations needed using stand
   if("stand" %in% method)
   {
-    df_treat <- df_untr <- df
-    df_treat[,exposure] <- 1
-    df_untr[,exposure] <- 0
-
-    pred_treat <- as.data.frame(predict(fit_y_by_exposure_X, newdata = df_treat, type = "probs"))
-    colnames(pred_treat) <-c("0","1", "2")
-    pred_untr <- as.data.frame(predict(fit_y_by_exposure_X, newdata = df_untr, type = "probs"))
-    colnames(pred_untr) <-c("0","1", "2")
-
-    self <- ifelse(subtype == 1, "1", "2")
-    other <- ifelse(subtype == 1, "2", "1")
-
-    n_w <- sum(df[,weight])
-
-    p_Y11_exposure1 <- sum(df[,weight]*pred_treat[,self])/n_w
-    p_Y21_exposure0 <- sum(df[,weight]*pred_untr[,other])/n_w
-    p_Y11_exposure0 <- sum(df[,weight]*pred_untr[,self])/n_w
-
-    if("diff" %in% scale )
+    for (i in length(subtype))
     {
-      p_Y20_exposure1 <- 1-sum(df[,weight]*pred_treat[,other])/n_w
-      sface_list[["diff"]][["stand"]] <- MultPer*(p_Y11_exposure1-lambda2*p_Y21_exposure0+(lambda1-1)*p_Y11_exposure0)/(p_Y20_exposure1-lambda2*p_Y21_exposure0)
-    }
+      current_subtype <- subtype[i]
+      self <- ifelse(current_subtype == 1, "1", "2")
+      other <- ifelse(current_subtype == 1, "2", "1")
 
-    if("RR" %in% scale )
-    {sface_list[["RR"]][["stand"]] <- (p_Y11_exposure1-lambda2*p_Y21_exposure0)/((1-lambda1)*p_Y11_exposure0)}
+      p_Y11_exposure1 <- sum(df[,weight]*pred_treat[,self])/n_w
+      p_Y21_exposure0 <- sum(df[,weight]*pred_untr[,other])/n_w
+      p_Y11_exposure0 <- sum(df[,weight]*pred_untr[,self])/n_w
+
+      if("diff" %in% scale )
+      {
+        p_Y20_exposure1 <- 1-sum(df[,weight]*pred_treat[,other])/n_w
+        sface_list[["diff"]][["stand"]][i] <- MultPer*(p_Y11_exposure1-lambda2*p_Y21_exposure0+(lambda1-1)*p_Y11_exposure0)/(p_Y20_exposure1-lambda2*p_Y21_exposure0)
+      if(length(sface_list[["diff"]][["stand"]]) == 2)
+      {
+        sface_list[["diff"]][["stand"]][3] <- sface_list[["diff"]][["stand"]][1]-sface_list[["diff"]][["stand"]][2]
+      }
+      }
+
+      if("RR" %in% scale )
+      {
+        sface_list[["RR"]][["stand"]][i] <- (p_Y11_exposure1-lambda2*p_Y21_exposure0)/((1-lambda1)*p_Y11_exposure0)
+        if(length(sface_list[["RR"]][["stand"]]) == 2)
+        {
+          sface_list[["RR"]][["stand"]][3] <- sface_list[["RR"]][["stand"]][1]-sface_list[["RR"]][["stand"]][2]
+        }
+      }
+    }
   }
 
   #calculate the expectations needed using IPTW
   if("IPTW" %in% method)
   {
-    df$'1' <- ifelse(df[,outcome] == 1 ,1, 0)
-    df$'2' <- ifelse(df[,outcome] == 2, 1, 0)
-
-    pred_exposure <-  predict(fit_exposure_by_X, type = "response")
     pr_exposure_1 <- mean(df[,exposure])
     n <- nrow(df)
-
-    self <- ifelse(subtype == 1, "1", "2")
-    other <- ifelse(subtype == 1, "2", "1")
 
     df$w_exposure <- ifelse(df[,exposure] == 1, pr_exposure_1/pred_exposure, (1-pr_exposure_1)/(1-pred_exposure) ) #Stabilized weights
 
@@ -130,54 +147,67 @@ sface <- function(stand_formula,
 
     n_w <- sum(df[,weight])
 
-    p_Y11_exposure1 <- sum(df[,weight]*df$w_exposure*df[,exposure]*df[,self])/sum(df[,weight]*df[,exposure])
-    p_Y11_exposure0 <- sum(df[,weight]*df$w_exposure*(1-df[,exposure])*df[,self])/sum(df[,weight]*(1-df[,exposure]))
-    p_Y21_exposure0 <- sum(df[,weight]*df$w_exposure*(1-df[,exposure])*df[,other])/sum(df[,weight]*(1-df[,exposure]))
-
-    if("diff" %in% scale )
+    for (i in length(subtype))
     {
-      p_Y20_exposure1 <- 1- sum(df[,weight]*df$w_exposure*df[,exposure]*df[,other])/sum(df[,weight]*df[,exposure])
-      sface_list[["diff"]][["IPTW"]] <- MultPer*(p_Y11_exposure1-lambda2*p_Y21_exposure0+(lambda1-1)*p_Y11_exposure0)/(p_Y20_exposure1-lambda2*p_Y21_exposure0)
-    }
+      current_subtype <- subtype[i]
+      self <- ifelse(current_subtype == 1, "1", "2")
+      other <- ifelse(current_subtype == 1, "2", "1")
+      p_Y11_exposure1 <- sum(df[,weight]*df$w_exposure*df[,exposure]*df[,self])/sum(df[,weight]*df[,exposure])
+      p_Y11_exposure0 <- sum(df[,weight]*df$w_exposure*(1-df[,exposure])*df[,self])/sum(df[,weight]*(1-df[,exposure]))
+      p_Y21_exposure0 <- sum(df[,weight]*df$w_exposure*(1-df[,exposure])*df[,other])/sum(df[,weight]*(1-df[,exposure]))
 
-    if("RR" %in% scale )
-    {sface_list[["RR"]][["IPTW"]] <- (p_Y11_exposure1-lambda2*p_Y21_exposure0)/((1-lambda1)*p_Y11_exposure0)}
+      if("diff" %in% scale )
+      {
+        p_Y20_exposure1 <- 1- sum(df[,weight]*df$w_exposure*df[,exposure]*df[,other])/sum(df[,weight]*df[,exposure])
+        sface_list[["diff"]][["IPTW"]][i] <- MultPer*(p_Y11_exposure1-lambda2*p_Y21_exposure0+(lambda1-1)*p_Y11_exposure0)/(p_Y20_exposure1-lambda2*p_Y21_exposure0)
+        if(length(sface_list[["diff"]][["IPTW"]]) == 2)
+        {
+          sface_list[["diff"]][["IPTW"]][3] <- sface_list[["diff"]][["IPTW"]][1]-sface_list[["diff"]][["IPTW"]][2]
+        }
+      }
+
+      if("RR" %in% scale )
+      {
+        sface_list[["RR"]][["IPTW"]][i] <- (p_Y11_exposure1-lambda2*p_Y21_exposure0)/((1-lambda1)*p_Y11_exposure0)
+        if(length(sface_list[["RR"]][["IPTW"]]) == 2)
+        {
+          sface_list[["RR"]][["IPTW"]][3] <- sface_list[["RR"]][["IPTW"]][1]-sface_list[["RR"]][["IPTW"]][2]
+        }
+      }
+    }
   }
 
   #calculate the expectations needed using DR
   if("DR" %in% method)
   {
-    df$'1' <- ifelse(df[,outcome] == 1 ,1, 0)
-    df$'2' <- ifelse(df[,outcome] == 2, 1, 0)
-
-    pred_exposure <-  predict(fit_exposure_by_X, type = "response")
-
-    df_treat <- df_untr <- df
-    df_treat[,exposure] <- 1
-    df_untr[,exposure] <- 0
-
-    pred_treat <- as.data.frame(predict(fit_y_by_exposure_X, newdata = df_treat, type = "probs"))
-    colnames(pred_treat) <-c("0","1", "2")
-    pred_untr <- as.data.frame(predict(fit_y_by_exposure_X, newdata = df_untr, type = "probs"))
-    colnames(pred_untr) <-c("0","1", "2")
-
-    self <- ifelse(subtype == 1, "1", "2")
-    other <- ifelse(subtype == 1, "2", "1")
-
-    n_w <- sum(df[,weight])
-
-    p_Y11_exposure1 <- sum(df[,weight]*(df[,exposure]*df[,self]/(pred_exposure) - ((df[,exposure]-pred_exposure)*pred_treat[,self])/pred_exposure))/n_w
-    p_Y11_exposure0 <- sum(df[,weight]*((1-df[,exposure])*df[,self]/(1-pred_exposure) + ((df[,exposure]-pred_exposure)*pred_untr[,self])/(1-pred_exposure)))/n_w
-    p_Y21_exposure0 <- sum(df[,weight]*((1-df[,exposure])*df[,other]/(1-pred_exposure) + ((df[,exposure]-pred_exposure)*pred_untr[,other])/(1-pred_exposure)))/n_w
-
-    if("diff" %in% scale )
+    for (i in length(subtype))
     {
-      p_Y20_exposure1 <- 1 - sum(df[,weight]*(df[,exposure]*df[,other]/(pred_exposure) - ((df[,exposure]-pred_exposure)*pred_treat[,other])/pred_exposure))/n_w
-      sface_list[["diff"]][["DR"]] <- MultPer*(p_Y11_exposure1-lambda2*p_Y21_exposure0+(lambda1-1)*p_Y11_exposure0)/(p_Y20_exposure1-lambda2*p_Y21_exposure0)
-    }
+      current_subtype <- subtype[i]
+      self <- ifelse(current_subtype == 1, "1", "2")
+      other <- ifelse(current_subtype == 1, "2", "1")
+      p_Y11_exposure1 <- sum(df[,weight]*(df[,exposure]*df[,self]/(pred_exposure) - ((df[,exposure]-pred_exposure)*pred_treat[,self])/pred_exposure))/n_w
+      p_Y11_exposure0 <- sum(df[,weight]*((1-df[,exposure])*df[,self]/(1-pred_exposure) + ((df[,exposure]-pred_exposure)*pred_untr[,self])/(1-pred_exposure)))/n_w
+      p_Y21_exposure0 <- sum(df[,weight]*((1-df[,exposure])*df[,other]/(1-pred_exposure) + ((df[,exposure]-pred_exposure)*pred_untr[,other])/(1-pred_exposure)))/n_w
 
-    if("RR" %in% scale )
-    {sface_list[["RR"]][["DR"]] <- (p_Y11_exposure1-lambda2*p_Y21_exposure0)/((1-lambda1)*p_Y11_exposure0)}
+      if("diff" %in% scale )
+      {
+        p_Y20_exposure1 <- 1 - sum(df[,weight]*(df[,exposure]*df[,other]/(pred_exposure) - ((df[,exposure]-pred_exposure)*pred_treat[,other])/pred_exposure))/n_w
+        sface_list[["diff"]][["DR"]][i] <- MultPer*(p_Y11_exposure1-lambda2*p_Y21_exposure0+(lambda1-1)*p_Y11_exposure0)/(p_Y20_exposure1-lambda2*p_Y21_exposure0)
+        if(length(sface_list[["diff"]][["DR"]]) == 2)
+        {
+          sface_list[["diff"]][["DR"]][3] <- sface_list[["diff"]][["DR"]][1]-sface_list[["diff"]][["DR"]][2]
+        }
+      }
+
+      if("RR" %in% scale )
+      {
+        sface_list[["RR"]][["DR"]][i] <- (p_Y11_exposure1-lambda2*p_Y21_exposure0)/((1-lambda1)*p_Y11_exposure0)
+        if(length(sface_list[["RR"]][["DR"]]) == 2)
+        {
+          sface_list[["RR"]][["DR"]][3] <- sface_list[["RR"]][["DR"]][1]-sface_list[["RR"]][["DR"]][2]
+        }
+      }
+    }
   }
   return(sface_list)
 }
