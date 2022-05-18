@@ -103,7 +103,7 @@ sface <- function(stand_formula,
   #calculate the expectations needed using stand
   if("stand" %in% method)
   {
-    for (i in length(subtype))
+    for (i in 1:length(subtype))
     {
       current_subtype <- subtype[i]
       self <- ifelse(current_subtype == 1, "1", "2")
@@ -147,7 +147,7 @@ sface <- function(stand_formula,
 
     n_w <- sum(df[,weight])
 
-    for (i in length(subtype))
+    for (i in 1:length(subtype))
     {
       current_subtype <- subtype[i]
       self <- ifelse(current_subtype == 1, "1", "2")
@@ -156,7 +156,7 @@ sface <- function(stand_formula,
       p_Y11_exposure0 <- sum(df[,weight]*df$w_exposure*(1-df[,exposure])*df[,self])/sum(df[,weight]*(1-df[,exposure]))
       p_Y21_exposure0 <- sum(df[,weight]*df$w_exposure*(1-df[,exposure])*df[,other])/sum(df[,weight]*(1-df[,exposure]))
 
-      if("diff" %in% scale )
+      if("diff" %in% scale)
       {
         p_Y20_exposure1 <- 1- sum(df[,weight]*df$w_exposure*df[,exposure]*df[,other])/sum(df[,weight]*df[,exposure])
         sface_list[["diff"]][["IPTW"]][i] <- MultPer*(p_Y11_exposure1-lambda2*p_Y21_exposure0+(lambda1-1)*p_Y11_exposure0)/(p_Y20_exposure1-lambda2*p_Y21_exposure0)
@@ -180,7 +180,7 @@ sface <- function(stand_formula,
   #calculate the expectations needed using DR
   if("DR" %in% method)
   {
-    for (i in length(subtype))
+    for (i in 1:length(subtype))
     {
       current_subtype <- subtype[i]
       self <- ifelse(current_subtype == 1, "1", "2")
@@ -209,7 +209,30 @@ sface <- function(stand_formula,
       }
     }
   }
-  return(sface_list)
+  subtype <- as.character(subtype)
+  subtype <- paste("Subtype ", subtype)
+  if(length(subtype) == 2)
+  {
+    subtype[3] <- "theta"
+  }
+
+  cat("The estimates SF-ACEs are:","\n")
+  if ("diff" %in% scale)
+  {
+    cat("On the difference scale:","\n")
+    diff_table <- as.data.frame(sface_list[["diff"]])
+    rownames(diff_table) <- subtype
+    print(diff_table)
+  }
+  if ("RR" %in% scale)
+  {
+    cat("On the Risk Ratio scale:","\n")
+    RR_table <- as.data.frame(sface_list[["RR"]])
+    rownames(RR_table) <- subtype
+    print(RR_table)
+  }
+
+  return(invisible(sface_list))
 }
 
 
