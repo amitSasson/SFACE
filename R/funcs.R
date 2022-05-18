@@ -69,6 +69,7 @@ sface <- function(stand_formula,
   #if(MultPer <= 0 ) {stop("MultPer can't be negative")}
 
   sface_list <- list()
+  subtype <- as.character(subtype)
 
   if (any(c("stand","DR") %in% method))
   {
@@ -103,9 +104,8 @@ sface <- function(stand_formula,
   #calculate the expectations needed using stand
   if("stand" %in% method)
   {
-    for (i in 1:length(subtype))
+    for (current_subtype in subtype)
     {
-      current_subtype <- subtype[i]
       self <- ifelse(current_subtype == 1, "1", "2")
       other <- ifelse(current_subtype == 1, "2", "1")
 
@@ -116,19 +116,19 @@ sface <- function(stand_formula,
       if("diff" %in% scale )
       {
         p_Y20_exposure1 <- 1-sum(df[,weight]*pred_treat[,other])/n_w
-        sface_list[["diff"]][["stand"]][i] <- MultPer*(p_Y11_exposure1-lambda2*p_Y21_exposure0+(lambda1-1)*p_Y11_exposure0)/(p_Y20_exposure1-lambda2*p_Y21_exposure0)
+        sface_list[["diff"]][["stand"]][[current_subtype]] <- MultPer*(p_Y11_exposure1-lambda2*p_Y21_exposure0+(lambda1-1)*p_Y11_exposure0)/(p_Y20_exposure1-lambda2*p_Y21_exposure0)
       if(length(sface_list[["diff"]][["stand"]]) == 2)
       {
-        sface_list[["diff"]][["stand"]][3] <- sface_list[["diff"]][["stand"]][1]-sface_list[["diff"]][["stand"]][2]
+        sface_list[["diff"]][["stand"]][["theta"]] <- sface_list[["diff"]][["stand"]][["1"]]-sface_list[["diff"]][["stand"]][["2"]]
       }
       }
 
       if("RR" %in% scale )
       {
-        sface_list[["RR"]][["stand"]][i] <- (p_Y11_exposure1-lambda2*p_Y21_exposure0)/((1-lambda1)*p_Y11_exposure0)
+        sface_list[["RR"]][["stand"]][[current_subtype]] <- (p_Y11_exposure1-lambda2*p_Y21_exposure0)/((1-lambda1)*p_Y11_exposure0)
         if(length(sface_list[["RR"]][["stand"]]) == 2)
         {
-          sface_list[["RR"]][["stand"]][3] <- sface_list[["RR"]][["stand"]][1]-sface_list[["RR"]][["stand"]][2]
+          sface_list[["RR"]][["stand"]][["theta"]] <- sface_list[["RR"]][["stand"]][["1"]]-sface_list[["RR"]][["stand"]][["2"]]
         }
       }
     }
@@ -147,9 +147,8 @@ sface <- function(stand_formula,
 
     n_w <- sum(df[,weight])
 
-    for (i in 1:length(subtype))
+    for (current_subtype in subtype)
     {
-      current_subtype <- subtype[i]
       self <- ifelse(current_subtype == 1, "1", "2")
       other <- ifelse(current_subtype == 1, "2", "1")
       p_Y11_exposure1 <- sum(df[,weight]*df$w_exposure*df[,exposure]*df[,self])/sum(df[,weight]*df[,exposure])
@@ -159,19 +158,19 @@ sface <- function(stand_formula,
       if("diff" %in% scale)
       {
         p_Y20_exposure1 <- 1- sum(df[,weight]*df$w_exposure*df[,exposure]*df[,other])/sum(df[,weight]*df[,exposure])
-        sface_list[["diff"]][["IPTW"]][i] <- MultPer*(p_Y11_exposure1-lambda2*p_Y21_exposure0+(lambda1-1)*p_Y11_exposure0)/(p_Y20_exposure1-lambda2*p_Y21_exposure0)
+        sface_list[["diff"]][["IPTW"]][[current_subtype]] <- MultPer*(p_Y11_exposure1-lambda2*p_Y21_exposure0+(lambda1-1)*p_Y11_exposure0)/(p_Y20_exposure1-lambda2*p_Y21_exposure0)
         if(length(sface_list[["diff"]][["IPTW"]]) == 2)
         {
-          sface_list[["diff"]][["IPTW"]][3] <- sface_list[["diff"]][["IPTW"]][1]-sface_list[["diff"]][["IPTW"]][2]
+          sface_list[["diff"]][["IPTW"]][["theta"]] <- sface_list[["diff"]][["IPTW"]][["1"]]-sface_list[["diff"]][["IPTW"]][["2"]]
         }
       }
 
       if("RR" %in% scale )
       {
-        sface_list[["RR"]][["IPTW"]][i] <- (p_Y11_exposure1-lambda2*p_Y21_exposure0)/((1-lambda1)*p_Y11_exposure0)
+        sface_list[["RR"]][["IPTW"]][[current_subtype]] <- (p_Y11_exposure1-lambda2*p_Y21_exposure0)/((1-lambda1)*p_Y11_exposure0)
         if(length(sface_list[["RR"]][["IPTW"]]) == 2)
         {
-          sface_list[["RR"]][["IPTW"]][3] <- sface_list[["RR"]][["IPTW"]][1]-sface_list[["RR"]][["IPTW"]][2]
+          sface_list[["RR"]][["IPTW"]][["theta"]] <- sface_list[["RR"]][["IPTW"]][["1"]]-sface_list[["RR"]][["IPTW"]][["2"]]
         }
       }
     }
@@ -180,9 +179,8 @@ sface <- function(stand_formula,
   #calculate the expectations needed using DR
   if("DR" %in% method)
   {
-    for (i in 1:length(subtype))
+    for (current_subtype in subtype)
     {
-      current_subtype <- subtype[i]
       self <- ifelse(current_subtype == 1, "1", "2")
       other <- ifelse(current_subtype == 1, "2", "1")
       p_Y11_exposure1 <- sum(df[,weight]*(df[,exposure]*df[,self]/(pred_exposure) - ((df[,exposure]-pred_exposure)*pred_treat[,self])/pred_exposure))/n_w
@@ -192,87 +190,47 @@ sface <- function(stand_formula,
       if("diff" %in% scale )
       {
         p_Y20_exposure1 <- 1 - sum(df[,weight]*(df[,exposure]*df[,other]/(pred_exposure) - ((df[,exposure]-pred_exposure)*pred_treat[,other])/pred_exposure))/n_w
-        sface_list[["diff"]][["DR"]][i] <- MultPer*(p_Y11_exposure1-lambda2*p_Y21_exposure0+(lambda1-1)*p_Y11_exposure0)/(p_Y20_exposure1-lambda2*p_Y21_exposure0)
+        sface_list[["diff"]][["DR"]][[current_subtype]] <- MultPer*(p_Y11_exposure1-lambda2*p_Y21_exposure0+(lambda1-1)*p_Y11_exposure0)/(p_Y20_exposure1-lambda2*p_Y21_exposure0)
         if(length(sface_list[["diff"]][["DR"]]) == 2)
         {
-          sface_list[["diff"]][["DR"]][3] <- sface_list[["diff"]][["DR"]][1]-sface_list[["diff"]][["DR"]][2]
+          sface_list[["diff"]][["DR"]][["theta"]] <- sface_list[["diff"]][["DR"]][["1"]]-sface_list[["diff"]][["DR"]][["2"]]
         }
       }
 
       if("RR" %in% scale )
       {
-        sface_list[["RR"]][["DR"]][i] <- (p_Y11_exposure1-lambda2*p_Y21_exposure0)/((1-lambda1)*p_Y11_exposure0)
+        sface_list[["RR"]][["DR"]][[current_subtype]] <- (p_Y11_exposure1-lambda2*p_Y21_exposure0)/((1-lambda1)*p_Y11_exposure0)
         if(length(sface_list[["RR"]][["DR"]]) == 2)
         {
-          sface_list[["RR"]][["DR"]][3] <- sface_list[["RR"]][["DR"]][1]-sface_list[["RR"]][["DR"]][2]
+          sface_list[["RR"]][["DR"]][["theta"]] <- sface_list[["RR"]][["DR"]][["1"]]-sface_list[["RR"]][["DR"]][["2"]]
         }
       }
     }
   }
-  subtype <- as.character(subtype)
-  subtype <- paste("Subtype ", subtype)
+
+  subtype <- paste("subtype ", subtype)
   if(length(subtype) == 2)
   {
     subtype[3] <- "theta"
   }
 
-  cat("The estimates SF-ACEs are:","\n")
+  cat("The estimates SF-ACEs are:","\n","\n")
   if ("diff" %in% scale)
   {
     cat("On the difference scale:","\n")
-    diff_table <- as.data.frame(sface_list[["diff"]])
-    rownames(diff_table) <- subtype
+    diff_table <- do.call(rbind.data.frame, sface_list[["diff"]])
+    colnames(diff_table) <- subtype
     print(diff_table)
+    cat("\n")
   }
   if ("RR" %in% scale)
   {
     cat("On the Risk Ratio scale:","\n")
-    RR_table <- as.data.frame(sface_list[["RR"]])
-    rownames(RR_table) <- subtype
+    RR_table <- do.call(rbind.data.frame, sface_list[["RR"]])
+    colnames(RR_table) <- subtype
     print(RR_table)
   }
-
   return(invisible(sface_list))
 }
 
-
-
-#' @title Difference between the Subtype Free Average Causal Effects
-#' @description A function that estimates the difference between the SF-ACE of the first subtype and the SF-ACE of the second subtype
-#' @param y The categorical outcome vector of length n.  Must be encoded 0 for disease-free, 1 for the first subtype and 2 for the second subtype.
-#' @param A The treatment/expousre vector pf length n. Must be encoded 1 for treated and 0 for untreated.
-#' @param X The n × p-matrix of covariates X, Default: NULL
-#' @param scale Should the SF-ACE be estimated on the difference or risk ratio scale.
-#' @param method Which method to use when adjusting for covariates, possibilities include standardization ("stand"), Inverse Probability Treatment Weighting ("IPTW"), and doubly robust estimation ("DR")
-#' @param lambda1 sensitivity parameter for subtype 1. Can range between 0 (S-Monotonicity for subtype 1) and 1 (D-Monotonicity for subtype 1), Default: 0
-#' @param lambda2 sensitivity parameter for subtype 2. Can range between 0 (S-Monotonicity for subtype 2) and 1 (D-Monotonicity for subtype 2), Default: 0
-#' @param weight A numerical vector of length n, holding weights to adjust for missing subtypes, Default: 1
-#' @param MultPer A numeric value indicating per how many people the effect should be calculated on the difference scale, Default: 1
-#' @return
-#' @details
-#' @examples
-#' A <- rbinom(n = 1000, size = 1, prob = 0.5)
-#' X1 <- rbinom(n = 1000, size = 1, prob = 0.5)
-#' X2 <- rnorm(n = 1000, mean = 0, sd = 1)
-#' X <- matrix(c(X1,X2), nrow = 1000, byrow = FALSE)
-#' y <- sample(c(0,1,2), 1000, replace=TRUE, prob=c(0.8, 0.1, 0.1) )
-#' theta_sface(y, A, X, scale = "diff", method = "stand")
-#' @rdname theta_sface
-#' @export
-
-theta_sface <- function(y,
-                        A,
-                        X = NULL,
-                        scale = c("diff", "RR"),
-                        method = c("stand", "IPTW", "DR"),
-                        lambda1 = 0,
-                        lambda2 = 0,
-                        weight = 1,
-                        MultPer=1)
-{
-  sface1 <- sface(y,A, X, subtype = 1, scale, method, lambda1, lambda2, weight, MultPer)
-  sface2 <- sface(y,A, X, subtype = 2, scale, method, lambda1, lambda2, weight, MultPer)
-
-  return(sface1-sface2)
-}
 
