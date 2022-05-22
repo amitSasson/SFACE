@@ -2,9 +2,9 @@
 #' @description A function to estimate the Subtype Free Average Causal Effect.
 #' @param stand_formula A formula for standartization and DR, y ~ A + X, the outcome as a function of the exposure and covariates
 #' @param iptw_formula  A formula for IPTW and DR, A ~ X, the exposure as a function of the covariates.
-#' @param exposure The treatment/expousre vector pf length n. Must be encoded 1 for treated and 0 for untreated.
+#' @param exposure The treatment/exposure vector pf length n. Must be encoded 1 for treated and 0 for untreated.
 #' @param outcome The categorical outcome vector of length n.  Must be encoded 0 for disease-free, 1 for the first subtype and 2 for the second subtype.
-#' @param df PARAM_DESCRIPTION
+#' @param df a data frame with columns for the outcome, expousre and covariates.
 #' @param subtype Should the SF-ACE be estimated for subtype 1 or subtype 2
 #' @param scale Should the SF-ACE be estimated on the difference or risk ratio scale.
 #' @param method Which method to use when adjusting for covariates, possibilities include standardization ("stand"), Inverse Probability Treatment Weighting ("IPTW"), and doubly robust estimation ("DR")
