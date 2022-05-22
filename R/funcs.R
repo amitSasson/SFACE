@@ -15,19 +15,22 @@
 #' @return OUTPUT_DESCRIPTION
 #' @details DETAILS
 #' @examples
-#' \dontrun{
-#' if(interactive()){
-#'  sface(stand_formula = y ~ A + X1 + X2,
-#'  iptw_formula = A ~ X1 + X2,
-#'  exposure = "A",
-#'  outcome = "y",
-#'  df = df,
-#'  subtype = c(1),
-#'  scale = c("diff","RR"),
-#'  method = c("stand", "IPTW"),
-#'  weight = "weight")
-#'  }
-#' }
+#' A <- rbinom(n = 1000, size = 1, prob = 0.5)
+#' X1 <- rbinom(n = 1000, size = 1, prob = 0.5)
+#' X2 <- rnorm(n = 1000, mean = 0, sd = 1)
+#' X <- matrix(c(X1,X2), nrow = 1000, byrow = FALSE)
+#' y <- sample(c(0,1,2), 1000, replace=TRUE, prob=c(0.8, 0.1, 0.1) )
+#' weight <- runif(n = 1000, 0,1)
+#' df <- data.frame(y, A, X1, X2, weight)
+#' sface(stand_formula = y ~ A + X1 + X2,
+#' iptw_formula = A ~ X1 + X2,
+#' exposure = "A",
+#' outcome = "y",
+#' df = df,
+#' subtype = c(1),
+#' scale = c("diff","RR"),
+#' method = c("stand", "IPTW"),
+#' weight = "weight")
 #' @seealso
 #'  \code{\link[nnet]{multinom}}
 #' @rdname sface
@@ -117,10 +120,10 @@ sface <- function(stand_formula,
         if(length(lambda1) > 1) {rownames(estiamtors) <- lambda1}
         if(length(lambda2) > 1) {colnames(estiamtors) <- lambda2}
         if(length(lambda1) == 1 & length(lambda2) == 1) {estiamtors <- c(estiamtors)}
-        sface_list[["diff"]][["stand"]][[current_subtype]] <- estiamtors
-      if(length(sface_list[["diff"]][["stand"]]) == 2)
+        sface_list[["sface"]][["diff"]][["stand"]][[current_subtype]] <- estiamtors
+      if(length(sface_list[["sface"]][["diff"]][["stand"]]) == 2)
       {
-        sface_list[["diff"]][["stand"]][["theta"]] <- sface_list[["diff"]][["stand"]][["1"]]-sface_list[["diff"]][["stand"]][["2"]]
+        sface_list[["sface"]][["diff"]][["stand"]][["theta"]] <- sface_list[["sface"]][["diff"]][["stand"]][["1"]]-sface_list[["sface"]][["diff"]][["stand"]][["2"]]
       }
       }
 
@@ -136,11 +139,11 @@ sface <- function(stand_formula,
         if(length(lambda2) > 1) {colnames(estiamtors) <- lambda2}
         if(length(lambda1) == 1 & length(lambda2) == 1) {estiamtors <- c(estiamtors)}
 
-        sface_list[["RR"]][["stand"]][[current_subtype]] <- estiamtors
+        sface_list[["sface"]][["RR"]][["stand"]][[current_subtype]] <- estiamtors
 
-        if(length(sface_list[["RR"]][["stand"]]) == 2)
+        if(length(sface_list[["sface"]][["RR"]][["stand"]]) == 2)
         {
-          sface_list[["RR"]][["stand"]][["theta"]] <- sface_list[["RR"]][["stand"]][["1"]]-sface_list[["RR"]][["stand"]][["2"]]
+          sface_list[["sface"]][["RR"]][["stand"]][["theta"]] <- sface_list[["sface"]][["RR"]][["stand"]][["1"]]-sface_list[["sface"]][["RR"]][["stand"]][["2"]]
         }
       }
     }
@@ -182,10 +185,10 @@ sface <- function(stand_formula,
         if(length(lambda2) > 1) {colnames(estiamtors) <- lambda2}
         if(length(lambda1) == 1 & length(lambda2) == 1) {estiamtors <- c(estiamtors)}
 
-        sface_list[["diff"]][["IPTW"]][[current_subtype]] <- estiamtors
-        if(length(sface_list[["diff"]][["IPTW"]]) == 2)
+        sface_list[["sface"]][["diff"]][["IPTW"]][[current_subtype]] <- estiamtors
+        if(length(sface_list[["sface"]][["diff"]][["IPTW"]]) == 2)
         {
-          sface_list[["diff"]][["IPTW"]][["theta"]] <- sface_list[["diff"]][["IPTW"]][["1"]]-sface_list[["diff"]][["IPTW"]][["2"]]
+          sface_list[["sface"]][["diff"]][["IPTW"]][["theta"]] <- sface_list[["sface"]][["diff"]][["IPTW"]][["1"]]-sface_list[["sface"]][["diff"]][["IPTW"]][["2"]]
         }
       }
 
@@ -201,10 +204,10 @@ sface <- function(stand_formula,
         if(length(lambda2) > 1) {colnames(estiamtors) <- lambda2}
         if(length(lambda1) == 1 & length(lambda2) == 1) {estiamtors <- c(estiamtors)}
 
-        sface_list[["RR"]][["IPTW"]][[current_subtype]] <- estiamtors
-        if(length(sface_list[["RR"]][["IPTW"]]) == 2)
+        sface_list[["sface"]][["RR"]][["IPTW"]][[current_subtype]] <- estiamtors
+        if(length(sface_list[["sface"]][["RR"]][["IPTW"]]) == 2)
         {
-          sface_list[["RR"]][["IPTW"]][["theta"]] <- sface_list[["RR"]][["IPTW"]][["1"]]-sface_list[["RR"]][["IPTW"]][["2"]]
+          sface_list[["sface"]][["RR"]][["IPTW"]][["theta"]] <- sface_list[["sface"]][["RR"]][["IPTW"]][["1"]]-sface_list[["sface"]][["RR"]][["IPTW"]][["2"]]
         }
       }
     }
@@ -236,10 +239,10 @@ sface <- function(stand_formula,
         if(length(lambda2) > 1) {colnames(estiamtors) <- lambda2}
         if(length(lambda1) == 1 & length(lambda2) == 1) {estiamtors <- c(estiamtors)}
 
-        sface_list[["diff"]][["DR"]][[current_subtype]] <- estiamtors
-        if(length(sface_list[["diff"]][["DR"]]) == 2)
+        sface_list[["sface"]][["diff"]][["DR"]][[current_subtype]] <- estiamtors
+        if(length(sface_list[["sface"]][["diff"]][["DR"]]) == 2)
         {
-          sface_list[["diff"]][["DR"]][["theta"]] <- sface_list[["diff"]][["DR"]][["1"]]-sface_list[["diff"]][["DR"]][["2"]]
+          sface_list[["sface"]][["diff"]][["DR"]][["theta"]] <- sface_list[["sface"]][["diff"]][["DR"]][["1"]]-sface_list[["sface"]][["diff"]][["DR"]][["2"]]
         }
       }
 
@@ -254,14 +257,19 @@ sface <- function(stand_formula,
         if(length(lambda1) > 1) {rownames(estiamtors) <- lambda1}
         if(length(lambda2) > 1) {colnames(estiamtors) <- lambda2}
         if(length(lambda1) == 1 & length(lambda2) == 1) {estiamtors <- c(estiamtors)}
-        sface_list[["RR"]][["DR"]][[current_subtype]] <- estiamtors
-        if(length(sface_list[["RR"]][["DR"]]) == 2)
+        sface_list[["sface"]][["RR"]][["DR"]][[current_subtype]] <- estiamtors
+        if(length(sface_list[["sface"]][["RR"]][["DR"]]) == 2)
         {
-          sface_list[["RR"]][["DR"]][["theta"]] <- sface_list[["RR"]][["DR"]][["1"]]-sface_list[["RR"]][["DR"]][["2"]]
+          sface_list[["sface"]][["RR"]][["DR"]][["theta"]] <- sface_list[["sface"]][["RR"]][["DR"]][["1"]]-sface_list[["sface"]][["RR"]][["DR"]][["2"]]
         }
       }
     }
   }
+  sface_list[["additional_info"]][["lambda1"]] <- lambda1
+  sface_list[["additional_info"]][["lambda2"]] <- lambda2
+  sface_list[["additional_info"]][["subtype"]] <- subtype
+
+
   class(sface_list) <- "sface"
   return(sface_list)
 }
@@ -279,28 +287,32 @@ RR_calc <- function(lambda1, lambda2, p_Y11_exposure1,p_Y21_exposure0, p_Y11_exp
   (p_Y11_exposure1-lambda2*p_Y21_exposure0)/((1-lambda1)*p_Y11_exposure0)
 }
 
-print.sface <- function(lst)
+print.sface <- function(sface_list)
 {
+  lambda1 <- sface_list[["additional_info"]][["lambda1"]]
+  lambda2 <- sface_list[["additional_info"]][["lambda2"]]
+  subtype <- sface_list[["additional_info"]][["subtype"]]
+
   cat("The estimates SF-ACEs are:","\n","\n")
-  for (sc in names(lst))
+  for (sc in names(sface_list[["sface"]]))
   {
     if(sc == "diff") {cat("On the difference scale:","\n")}
     if(sc == "RR") {cat("On the RR scale:","\n")}
 
-    for(m in names(lst[[1]]))
+    for(m in names(sface_list[["sface"]][[1]]))
     {
       cat("Using ", as.character(m),",", "\n")
       if(length(lambda1) == 1 & length(lambda2) == 1)
       {
-        diff_table <- do.call(cbind.data.frame, sface_list[[sc]][[m]])
+        diff_table <- do.call(cbind.data.frame, sface_list[["sface"]][[sc]][[m]])
         colnames(diff_table) <- subtype
         print(diff_table)
         cat("\n")
       }
       else
       {
-        for(su in names(lst[[1]][[1]]))
-          diff_table <- sface_list[[sc]][[m]][[su]]
+        for(su in names(sface_list[["sface"]][[1]][[1]]))
+          diff_table <- sface_list[["sface"]][[sc]][[m]][[su]]
         rownames(diff_table) <- paste0("lambda1=",as.character(lambda1))
         colnames(diff_table) <- paste0("lambda2=",as.character(lambda2))
         print(diff_table)

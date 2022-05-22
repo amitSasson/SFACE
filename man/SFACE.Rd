@@ -2,12 +2,14 @@
 % Please edit documentation in R/funcs.R
 \name{sface}
 \alias{sface}
-\title{sface}
+\title{Subtype Free Average Causal Effect}
 \usage{
 sface(
-  y,
-  A,
-  X = NULL,
+  stand_formula,
+  iptw_formula,
+  exposure,
+  outcome,
+  df,
   subtype = c(1, 2),
   scale = c("diff", "RR"),
   method = c("stand", "IPTW", "DR"),
@@ -18,31 +20,35 @@ sface(
 )
 }
 \arguments{
-\item{y}{The categorical outcome vector of length n.  Must be encoded o for disease-free, 1 for the first subtype and 2 for the second subtype.}
+\item{stand_formula}{A formula for standartization and DR, y ~ A + X, the outcome as a function of the exposure and covariates}
 
-\item{A}{The treatment/expousre vector pf length n. Must be encoded 1 for treated and 0 for untreated.}
+\item{iptw_formula}{A formula for IPTW and DR, A ~ X, the exposure as a function of the covariates.}
 
-\item{X}{The n × p-matrix of covariates X, Default: NULL}
+\item{exposure}{The treatment/exposure vector pf length n. Must be encoded 1 for treated and 0 for untreated.}
+
+\item{outcome}{The categorical outcome vector of length n.  Must be encoded 0 for disease-free, 1 for the first subtype and 2 for the second subtype.}
+
+\item{df}{a data frame with columns for the outcome, expousre and covariates.}
 
 \item{subtype}{Should the SF-ACE be estimated for subtype 1 or subtype 2}
 
-\item{scale}{Indication of weather the SF-ACE should be estimated on the difference or risk ratio scale.}
+\item{scale}{Should the SF-ACE be estimated on the difference or risk ratio scale.}
 
-\item{method}{Indication of which method to use when adjusting for covariates, possibilities inclued standardization ("stand"), Inverse Probability Treatment Weighting ("IPTW"), and doubly robust estimation ("DR")}
+\item{method}{Which method to use when adjusting for covariates, possibilities include standardization ("stand"), Inverse Probability Treatment Weighting ("IPTW"), and doubly robust estimation ("DR")}
 
 \item{lambda1}{sensitivity parameter for subtype 1. Can range between 0 (S-Monotonicity for subtype 1) and 1 (D-Monotonicity for subtype 1), Default: 0}
 
 \item{lambda2}{sensitivity parameter for subtype 2. Can range between 0 (S-Monotonicity for subtype 2) and 1 (D-Monotonicity for subtype 2), Default: 0}
 
-\item{weight}{A vector of length n, holding weights to adjust for missing subtypes, Default: 1}
+\item{weight}{A numerical vector of length n, holding weights to adjust for missing subtypes, Default: 1}
 
-\item{MultPer}{A numeric value indicating per how many people the effect sould be calculated on the difference scale, Default: 1}
+\item{MultPer}{A numeric value indicating per how many people the effect should be calculated on the difference scale, Default: 1}
 }
 \value{
-
+OUTPUT_DESCRIPTION
 }
 \description{
-function to estimate the Subtype Free Average Causal Effect.
+A function to estimate the Subtype Free Average Causal Effect.
 }
 \details{
 DETAILS
@@ -53,9 +59,17 @@ X1 <- rbinom(n = 1000, size = 1, prob = 0.5)
 X2 <- rnorm(n = 1000, mean = 0, sd = 1)
 X <- matrix(c(X1,X2), nrow = 1000, byrow = FALSE)
 y <- sample(c(0,1,2), 1000, replace=TRUE, prob=c(0.8, 0.1, 0.1) )
-sface(y, A, X, subtype = 1, scale = "diff", method = "stand")
-
-
+weight <- runif(n = 1000, 0,1)
+df <- data.frame(y, A, X1, X2, weight)
+sface(stand_formula = y ~ A + X1 + X2,
+iptw_formula = A ~ X1 + X2,
+exposure = "A",
+outcome = "y",
+df = df,
+subtype = c(1),
+scale = c("diff","RR"),
+method = c("stand", "IPTW"),
+weight = "weight")
 }
 \seealso{
 \code{\link[nnet]{multinom}}
