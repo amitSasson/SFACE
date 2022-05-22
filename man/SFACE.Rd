@@ -61,6 +61,7 @@ X <- matrix(c(X1,X2), nrow = 1000, byrow = FALSE)
 y <- sample(c(0,1,2), 1000, replace=TRUE, prob=c(0.8, 0.1, 0.1) )
 weight <- runif(n = 1000, 0,1)
 df <- data.frame(y, A, X1, X2, weight)
+
 sface(stand_formula = y ~ A + X1 + X2,
 iptw_formula = A ~ X1 + X2,
 exposure = "A",

@@ -22,6 +22,7 @@
 #' y <- sample(c(0,1,2), 1000, replace=TRUE, prob=c(0.8, 0.1, 0.1) )
 #' weight <- runif(n = 1000, 0,1)
 #' df <- data.frame(y, A, X1, X2, weight)
+#'
 #' sface(stand_formula = y ~ A + X1 + X2,
 #' iptw_formula = A ~ X1 + X2,
 #' exposure = "A",
@@ -291,7 +292,8 @@ print.sface <- function(sface_list)
 {
   lambda1 <- sface_list[["additional_info"]][["lambda1"]]
   lambda2 <- sface_list[["additional_info"]][["lambda2"]]
-  subtype <- sface_list[["additional_info"]][["subtype"]]
+  subtype <- paste0("subtype", sface_list[["additional_info"]][["subtype"]])
+  if (length(subtype) == 2) {subtype[3] <- "theta"}
 
   cat("The estimates SF-ACEs are:","\n","\n")
   for (sc in names(sface_list[["sface"]]))
@@ -304,18 +306,18 @@ print.sface <- function(sface_list)
       cat("Using ", as.character(m),",", "\n")
       if(length(lambda1) == 1 & length(lambda2) == 1)
       {
-        diff_table <- do.call(cbind.data.frame, sface_list[["sface"]][[sc]][[m]])
-        colnames(diff_table) <- subtype
-        print(diff_table)
+        ans <- do.call(cbind.data.frame, sface_list[["sface"]][[sc]][[m]])
+        colnames(ans) <- subtype
+        print(ans)
         cat("\n")
       }
       else
       {
         for(su in names(sface_list[["sface"]][[1]][[1]]))
           diff_table <- sface_list[["sface"]][[sc]][[m]][[su]]
-        rownames(diff_table) <- paste0("lambda1=",as.character(lambda1))
-        colnames(diff_table) <- paste0("lambda2=",as.character(lambda2))
-        print(diff_table)
+        rownames(ans) <- paste0("lambda1=",as.character(lambda1))
+        colnames(ans) <- paste0("lambda2=",as.character(lambda2))
+        print(ans)
         cat("\n")
       }
       cat("\n")
@@ -323,5 +325,39 @@ print.sface <- function(sface_list)
     cat("\n")
   }
 }
+
+plot.sface <- function(sface_list)
+{
+  lambda1 <- sface_list[["additional_info"]][["lambda1"]]
+  lambda2 <- sface_list[["additional_info"]][["lambda2"]]
+  subtype <- paste0("subtype", sface_list[["additional_info"]][["subtype"]])
+  if (length(subtype) == 2) {subtype[3] <- "theta"}
+  full_ans <-list()
+  i <- 1
+
+  for (sc in names(sface_list[["sface"]]))
+  {
+    for(m in names(sface_list[["sface"]][[1]]))
+    {
+        for(su in names(sface_list[["sface"]][[1]][[1]]))
+        {
+          ans <- sface_list[["sface"]][[sc]][[m]][[su]]
+          rownames(ans) <- lambda1
+          colnames(ans) <- "value"
+          ans <- rownames_to_column(as.data.frame(ans), "lambda1")
+          ans$method <- m
+          ans$scale <- sc
+          ans$subtype <- su
+          full_ans[[i]] <- ans
+          i <- i + 1
+        }
+    }
+  }
+  full_ans <- do.call(rbind, full_ans)
+  return(full_ans)
+}
+
+
+
 
 
