@@ -272,40 +272,8 @@ sface <- function(stand_formula,
       }
     }
   }
-
-  subtype <- paste("subtype ", subtype)
-  if(length(subtype) == 2)
-  {
-    subtype[3] <- "theta"
-  }
-
-  cat("The estimates SF-ACEs are:","\n","\n")
-  if ("diff" %in% scale)
-  {
-    cat("On the difference scale:","\n")
-    for(m in method)
-    {
-      cat("Using ", as.character(m),",", "\n")
-      diff_table <- do.call(cbind.data.frame, sface_list[["diff"]][[m]])
-      colnames(diff_table) <- subtype
-      print(diff_table)
-      cat("\n")
-    }
-  }
-  cat("\n")
-  if ("RR" %in% scale)
-    cat("On the Risk Ratio scale:","\n")
-  {
-    for(m in method)
-    {
-      cat("Using ", as.character(m),":", "\n")
-      diff_table <- do.call(cbind.data.frame, sface_list[["RR"]][[m]])
-      colnames(diff_table) <- subtype
-      print(diff_table)
-      cat("\n")
-    }
-  }
-  return(invisible(sface_list))
+  class(sface_list) <- "sface"
+  return(sface_list)
 }
 
 
@@ -321,16 +289,37 @@ RR_calc <- function(lambda1, lambda2, p_Y11_exposure1,p_Y21_exposure0, p_Y11_exp
   (p_Y11_exposure1-lambda2*p_Y21_exposure0)/((1-lambda1)*p_Y11_exposure0)
 }
 
-outer(X  = lambda1,
-      Y  = lambda2,
-      FUN = diff_calc,
-      p_Y11_exposure1 = 0.8,
-      p_Y21_exposure0 = 0.7,
-      p_Y11_exposure0 = 0.2,
-      p_Y20_exposure1 = 0.34,
-      MultPer = 1)
+print.sface <- function(lst)
+{
+  cat("The estimates SF-ACEs are:","\n","\n")
+  for (sc in names(lst))
+  {
+    if(sc == "diff") {cat("On the difference scale:","\n")}
+    if(sc == "RR") {cat("On the RR scale:","\n")}
 
-x <- c(A=1,B=2,C=3)
-y <- c(A=4,B=5,C=6)
-f <- function(x,y,z) {return(x+y+z)}
-outer(x,y, FUN=f, z=1)
+    for(m in names(lst[[1]]))
+    {
+      cat("Using ", as.character(m),",", "\n")
+      if(length(lambda1) == 1 & length(lambda2) == 1)
+      {
+        diff_table <- do.call(cbind.data.frame, sface_list[[sc]][[m]])
+        colnames(diff_table) <- subtype
+        print(diff_table)
+        cat("\n")
+      }
+      else
+      {
+        for(su in names(lst[[1]][[1]]))
+          diff_table <- sface_list[[sc]][[m]][[su]]
+        rownames(diff_table) <- paste0("lambda1=",as.character(lambda1))
+        colnames(diff_table) <- paste0("lambda2=",as.character(lambda2))
+        print(diff_table)
+        cat("\n")
+      }
+      cat("\n")
+    }
+    cat("\n")
+  }
+}
+
+
