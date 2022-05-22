@@ -1,9 +1,10 @@
-
 #' @title Subtype Free Average Causal Effect
 #' @description A function to estimate the Subtype Free Average Causal Effect.
-#' @param y The categorical outcome vector of length n.  Must be encoded 0 for disease-free, 1 for the first subtype and 2 for the second subtype.
-#' @param A The treatment/expousre vector pf length n. Must be encoded 1 for treated and 0 for untreated.
-#' @param X The n × p-matrix of covariates X, Default: NULL
+#' @param stand_formula A formula for standartization and DR, y ~ A + X, the outcome as a function of the exposure and covariates
+#' @param iptw_formula  A formula for IPTW and DR, A ~ X, the exposure as a function of the covariates.
+#' @param exposure The treatment/expousre vector pf length n. Must be encoded 1 for treated and 0 for untreated.
+#' @param outcome The categorical outcome vector of length n.  Must be encoded 0 for disease-free, 1 for the first subtype and 2 for the second subtype.
+#' @param df PARAM_DESCRIPTION
 #' @param subtype Should the SF-ACE be estimated for subtype 1 or subtype 2
 #' @param scale Should the SF-ACE be estimated on the difference or risk ratio scale.
 #' @param method Which method to use when adjusting for covariates, possibilities include standardization ("stand"), Inverse Probability Treatment Weighting ("IPTW"), and doubly robust estimation ("DR")
@@ -11,38 +12,27 @@
 #' @param lambda2 sensitivity parameter for subtype 2. Can range between 0 (S-Monotonicity for subtype 2) and 1 (D-Monotonicity for subtype 2), Default: 0
 #' @param weight A numerical vector of length n, holding weights to adjust for missing subtypes, Default: 1
 #' @param MultPer A numeric value indicating per how many people the effect should be calculated on the difference scale, Default: 1
-#' @return
+#' @return OUTPUT_DESCRIPTION
 #' @details DETAILS
 #' @examples
-#' A <- rbinom(n = 1000, size = 1, prob = 0.5)
-#' X1 <- rbinom(n = 1000, size = 1, prob = 0.5)
-#' X2 <- rnorm(n = 1000, mean = 0, sd = 1)
-#' X <- matrix(c(X1,X2), nrow = 1000, byrow = FALSE)
-#' y <- sample(c(0,1,2), 1000, replace=TRUE, prob=c(0.8, 0.1, 0.1) )
-#' sface(y, A, X, subtype = 1, scale = "diff", method = "stand")
-#'
-#'
+#' \dontrun{
+#' if(interactive()){
+#'  sface(stand_formula = y ~ A + X1 + X2,
+#'  iptw_formula = A ~ X1 + X2,
+#'  exposure = "A",
+#'  outcome = "y",
+#'  df = df,
+#'  subtype = c(1),
+#'  scale = c("diff","RR"),
+#'  method = c("stand", "IPTW"),
+#'  weight = "weight")
+#'  }
+#' }
 #' @seealso
 #'  \code{\link[nnet]{multinom}}
 #' @rdname sface
 #' @export
 #' @importFrom nnet multinom
-sface(stand_formula = y ~ A + X1 + X2,
-      iptw_formula = A ~ X1 + X2,
-      exposure = "A",
-      outcome = "y",
-      df = df,
-      subtype = c(1),
-      scale = c("diff","RR"),
-      method = c("stand", "IPTW"),
-      weight = "weight")
-sface(stand_formula = y ~ A + X1 + X2,
-      iptw_formula = A ~ X1 + X2,
-      exposure = "A",
-      outcome = "y",
-      df = df,
-      subtype = 1,
-      weight = "weight")
 sface <- function(stand_formula,
                   iptw_formula,
                   exposure,
