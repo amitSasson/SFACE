@@ -288,6 +288,63 @@ RR_calc <- function(lambda1, lambda2, p_Y11_exposure1,p_Y21_exposure0, p_Y11_exp
   (p_Y11_exposure1-lambda2*p_Y21_exposure0)/((1-lambda1)*p_Y11_exposure0)
 }
 
+stand <- function(subtype, df, weight, scale, lambda1, lambda2, MultPer)
+{
+  for (current_subtype in subtype)
+  {
+    self <- ifelse(current_subtype == 1, "1", "2")
+    other <- ifelse(current_subtype == 1, "2", "1")
+
+    p_Y11_exposure1 <- sum(df[,weight]*pred_treat[,self])/n_w
+    p_Y21_exposure0 <- sum(df[,weight]*pred_untr[,other])/n_w
+    p_Y11_exposure0 <- sum(df[,weight]*pred_untr[,self])/n_w
+
+    if("diff" %in% scale )
+    {
+      p_Y20_exposure1 <- 1-sum(df[,weight]*pred_treat[,other])/n_w
+      estiamtors <- outer(X = lambda1,
+                          Y = lambda2,
+                          FUN = diff_calc,
+                          p_Y11_exposure1,
+                          p_Y21_exposure0,
+                          p_Y11_exposure0,
+                          p_Y20_exposure1,
+                          MultPer)
+      if(length(lambda1) > 1) {rownames(estiamtors) <- lambda1}
+      if(length(lambda2) > 1) {colnames(estiamtors) <- lambda2}
+      if(length(lambda1) == 1 & length(lambda2) == 1) {estiamtors <- c(estiamtors)}
+      sface_list[["sface"]][["diff"]][["stand"]][[current_subtype]] <- estiamtors
+      if(length(sface_list[["sface"]][["diff"]][["stand"]]) == 2)
+      {
+        sface_list[["sface"]][["diff"]][["stand"]][["theta"]] <- sface_list[["sface"]][["diff"]][["stand"]][["1"]]-sface_list[["sface"]][["diff"]][["stand"]][["2"]]
+      }
+    }
+
+    if("RR" %in% scale )
+    {
+      estiamtors <- outer(X = lambda1,
+                          Y = lambda2,
+                          FUN = RR_calc,
+                          p_Y11_exposure1,
+                          p_Y21_exposure0,
+                          p_Y11_exposure0)
+      if(length(lambda1) > 1) {rownames(estiamtors) <- lambda1}
+      if(length(lambda2) > 1) {colnames(estiamtors) <- lambda2}
+      if(length(lambda1) == 1 & length(lambda2) == 1) {estiamtors <- c(estiamtors)}
+
+      sface_list[["sface"]][["RR"]][["stand"]][[current_subtype]] <- estiamtors
+
+      if(length(sface_list[["sface"]][["RR"]][["stand"]]) == 2)
+      {
+        sface_list[["sface"]][["RR"]][["stand"]][["theta"]] <- sface_list[["sface"]][["RR"]][["stand"]][["1"]]-sface_list[["sface"]][["RR"]][["stand"]][["2"]]
+      }
+    }
+  }
+}
+
+
+
+
 print.sface <- function(sface_list)
 {
   lambda1 <- sface_list[["additional_info"]][["lambda1"]]
