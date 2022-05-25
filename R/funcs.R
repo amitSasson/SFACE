@@ -51,16 +51,17 @@ sface <- function(stand_formula,
                   MultPer=1)
 {
   #checking the input:
-  #if(length(exposure) != length(y)) {stop("exposure and y are of different lengthts")}
-  #if(!all(exposure %in% c(0,1))) {stop("exposure can only contain 0 and 1 values")}
-  #if(!all(y %in% c(0,1,2))) {stop("y can only contain 0, 1 and 2 values")}
-  #if(!(subtype %in% c(1,2))) {stop("The subtype should be 1 or 2")}
-  #if(!all(scale %in% c("diff", "RR"))) {stop("The scale should be 'diff' or 'RR' ")}
-  #if(!all(method %in% c("stand", "IPTW", "DR"))) {stop("The scale should be 'stand','IPTW', or 'DR' ")}
-  #if(any(weight <= 0)) {stop("weights can't be negative")}
-  #if(lambda1 < 0 | lambda1 > 1) {stop("Lambda 1 should be between 0 and 1")}
-  #if(lambda2 < 0 | lambda2 > 1) {stop("Lambda 2 should be between 0 and 1")}
-  #if(MultPer <= 0 ) {stop("MultPer can't be negative")}
+  if(is.null(df[,exposure])) {stop("exposure must be a column in df")}
+  if(is.null(df[,y])) {stop("y must be a column in df")}
+  if(!all(df$exposure %in% c(0,1))) {stop("exposure can only contain 0 and 1 values")}
+  if(!all(df$y %in% c(0,1,2))) {stop("y can only contain 0, 1 and 2 values")}
+  if(!(subtype %in% c(1,2))) {stop("The subtype should be 1 or 2")}
+  if(!all(scale %in% c("diff", "RR"))) {stop("The scale should be 'diff' or 'RR' ")}
+  if(!all(method %in% c("stand", "IPTW", "DR"))) {stop("The scale should be 'stand','IPTW', or 'DR' ")}
+  if(any(df$weight <= 0)) {stop("weights can't be negative")}
+  if(lambda1 < 0 | lambda1 > 1) {stop("Lambda 1 should be between 0 and 1")}
+  if(lambda2 < 0 | lambda2 > 1) {stop("Lambda 2 should be between 0 and 1")}
+  if(MultPer <= 0 ) {stop("MultPer can't be negative")}
 
   sface_list <- list()
   subtype <- as.character(subtype)
