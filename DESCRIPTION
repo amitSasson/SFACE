@@ -5,7 +5,7 @@ Version: 0.1.0
 Author: person("Amit", "Sasson", email = "amitsasson1@gmail.com", role = c("aut", "cre")))
 Maintainer: The package maintainer <yourself@somewhere.net>
 Description: This package allows estimation of the SF-ACE
-Imports: nnet
+Imports: nnet, gridExtra, dplyr, purrr, tidyr, ggplot2, tibble
 License: GPL (>= 2)
 Encoding: UTF-8
 LazyData: true

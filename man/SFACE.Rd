@@ -67,7 +67,6 @@ iptw_formula = A ~ X1 + X2,
 exposure = "A",
 outcome = "y",
 df = df,
-subtype = c(1),
 scale = c("diff","RR"),
 method = c("stand", "IPTW"),
 weight = "weight")

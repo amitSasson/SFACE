@@ -28,7 +28,6 @@
 #' exposure = "A",
 #' outcome = "y",
 #' df = df,
-#' subtype = c(1),
 #' scale = c("diff","RR"),
 #' method = c("stand", "IPTW"),
 #' weight = "weight")
@@ -53,7 +52,7 @@ sface <- function(stand_formula,
   #checking the input:
   if(!all(df$exposure %in% c(0,1))) {stop("exposure can only contain 0 and 1 values")}
   if(!all(df$y %in% c(0,1,2))) {stop("y can only contain 0, 1 and 2 values")}
-  if(!(subtype %in% c(1,2))) {stop("The subtype should be 1 or 2")}
+  if(!all(subtype %in% c(1,2))) {stop("The subtype should be 1 or 2")}
   if(!all(scale %in% c("diff", "RR"))) {stop("The scale should be 'diff' or 'RR' ")}
   if(!all(method %in% c("stand", "IPTW", "DR"))) {stop("The scale should be 'stand','IPTW', or 'DR' ")}
   if(any(df$weight <= 0)) {stop("weights can't be negative")}
@@ -279,7 +278,6 @@ diff_calc <- function(lambda1, lambda2, p_Y11_exposure1,p_Y21_exposure0, p_Y11_e
   MultPer*(p_Y11_exposure1-lambda2*p_Y21_exposure0+(lambda1-1)*p_Y11_exposure0)/(p_Y20_exposure1-lambda2*p_Y21_exposure0)
 }
 
-
 RR_calc <- function(lambda1, lambda2, p_Y11_exposure1,p_Y21_exposure0, p_Y11_exposure0)
 {
   (p_Y11_exposure1-lambda2*p_Y21_exposure0)/((1-lambda1)*p_Y11_exposure0)
@@ -288,13 +286,33 @@ RR_calc <- function(lambda1, lambda2, p_Y11_exposure1,p_Y21_exposure0, p_Y11_exp
 
 #' @title Print SF-ACE
 #' @description this function prints lists of the class "sface"
-#' @param sface_list a list of class "sface", usually the output of the function sface
+#' @param x a list of class "sface", usually the output of the function sface
+#' @param \dots not used
 #' @return
 #' @details
+#' @examples
+#' A <- rbinom(n = 1000, size = 1, prob = 0.5)
+#' X1 <- rbinom(n = 1000, size = 1, prob = 0.5)
+#' X2 <- rnorm(n = 1000, mean = 0, sd = 1)
+#' X <- matrix(c(X1,X2), nrow = 1000, byrow = FALSE)
+#' y <- sample(c(0,1,2), 1000, replace=TRUE, prob=c(0.8, 0.1, 0.1) )
+#' weight <- runif(n = 1000, 0,1)
+#' df <- data.frame(y, A, X1, X2, weight)
+#'
+#' lst <- sface(stand_formula = y ~ A + X1 + X2,
+#' iptw_formula = A ~ X1 + X2,
+#' exposure = "A",
+#' outcome = "y",
+#' df = df,
+#' weight = "weight",
+#' lambda1 = c(0.3, 0.5, 0.7))
+#'
+#' print(lst)
 #' @rdname print.sface
 #' @export
-print.sface <- function(sface_list)
+print.sface <- function(x, ...)
 {
+  sface_list <- x
   lambda1 <- sface_list[["additional_info"]][["lambda1"]]
   lambda2 <- sface_list[["additional_info"]][["lambda2"]]
   subtype <- paste0("subtype", sface_list[["additional_info"]][["subtype"]])
@@ -319,11 +337,15 @@ print.sface <- function(sface_list)
       else
       {
         for(su in names(sface_list[["sface"]][[1]][[1]]))
-          diff_table <- sface_list[["sface"]][[sc]][[m]][[su]]
+        {
+          if(su %in% 1:2) {cat("For Subtype", as.character(su),",", "\n")}
+          if(su == "theta") {cat("For", as.character(su),",", "\n")}
+        ans <- sface_list[["sface"]][[sc]][[m]][[su]]
         rownames(ans) <- paste0("lambda1=",as.character(lambda1))
         colnames(ans) <- paste0("lambda2=",as.character(lambda2))
         print(ans)
         cat("\n")
+        }
       }
       cat("\n")
     }
@@ -331,8 +353,41 @@ print.sface <- function(sface_list)
   }
 }
 
-plot.sface <- function(sface_list)
+#' @title Plot  SF-ACE
+#' @description this function plots lists of the class "sface"
+#' @param x a list of class "sface", usually the output of the function sface
+#' @param \dots not used
+#' @details
+#' @examples
+#' A <- rbinom(n = 1000, size = 1, prob = 0.5)
+#' X1 <- rbinom(n = 1000, size = 1, prob = 0.5)
+#' X2 <- rnorm(n = 1000, mean = 0, sd = 1)
+#' X <- matrix(c(X1,X2), nrow = 1000, byrow = FALSE)
+#' y <- sample(c(0,1,2), 1000, replace=TRUE, prob=c(0.8, 0.1, 0.1) )
+#' weight <- runif(n = 1000, 0,1)
+#' df <- data.frame(y, A, X1, X2, weight)
+#'
+#' lst <- sface(stand_formula = y ~ A + X1 + X2,
+#' iptw_formula = A ~ X1 + X2,
+#' exposure = "A",
+#' outcome = "y",
+#' df = df,
+#' weight = "weight",
+#' lambda1 = c(0.3, 0.5, 0.7))
+#'
+#' plot(lst)
+#' @rdname plot.sface
+#' @importFrom gridExtra grid.arrange
+#' @importFrom dplyr group_by
+#' @importFrom tibble rownames_to_column
+#' @importFrom purrr map2
+#' @importFrom tidyr nest
+#' @import ggplot2
+#' @export plot.sface
+#' @export
+plot.sface <- function(x, ...)
 {
+  sface_list <- x
   lambda1 <- sface_list[["additional_info"]][["lambda1"]]
   lambda2 <- sface_list[["additional_info"]][["lambda2"]]
   subtype <- paste0("subtype", sface_list[["additional_info"]][["subtype"]])
@@ -352,8 +407,12 @@ plot.sface <- function(sface_list)
   {
     plot_two_lambdas(sface_list, lambda1, lambda2)
   }
-}
 
+  if(length(lambda1) == 1 & length(lambda2) == 1)
+  {
+    print("plotting method requieres multiple lambda1 or lambda2 values")
+  }
+}
 
 plot_one_lambda <- function(sface_list, lambda, lambda_vals)
 {
@@ -370,7 +429,7 @@ plot_one_lambda <- function(sface_list, lambda, lambda_vals)
         if(lambda == "lambda2") {ans <- t(ans)}
         rownames(ans) <- lambda_vals
         colnames(ans) <- "value"
-        ans <- rownames_to_column(as.data.frame(ans), "lambda")
+        ans <- tibble::rownames_to_column(as.data.frame(ans), "lambda")
         ans$method <- m
         ans$scale <- sc
         ans$subtype <- su
@@ -390,9 +449,7 @@ plot_one_lambda <- function(sface_list, lambda, lambda_vals)
   print(p)
 }
 
-
-
-plot_two_lambdas <- function(sfac_list, lambda1_vals, lambda2_vals)
+plot_two_lambdas <- function(sface_list, lambda1_vals, lambda2_vals)
 {
   full_ans <-list()
   i <- 1
@@ -417,14 +474,16 @@ plot_two_lambdas <- function(sfac_list, lambda1_vals, lambda2_vals)
     }
   }
   full_ans <- do.call(rbind, full_ans)
-  plot_func <- function(df, name) {
-    ggplot(data = df, aes(x = lambda1, y = lambda2, fill = value)) +
+
+    plot_func <- function(df, name)
+  {
+   ggplot(data = df, aes(x = lambda1, y = lambda2, fill = value)) +
       geom_tile() +
       scale_fill_continuous(name = name) +
       facet_wrap(.~ method)
   }
 
-  mutate(tidyr::nest(dplyr::group_by(a, scale)), plots = purrr::map2(data, scale, plot_func))
+  nested_tmp <- mutate(tidyr::nest(dplyr::group_by(full_ans, scale)), plots = purrr::map2(data, scale, plot_func))
   gridExtra::grid.arrange(grobs = nested_tmp$plots)
 }
 
