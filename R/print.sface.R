@@ -25,7 +25,7 @@
 #' @rdname print.sface
 #' @export print.sface
 #' @export
-print.sface <- function(x, ...)
+print.sface <- function(x, digits = 4, ...)
 {
   sface_list <- x
   lambda1 <- sface_list[["additional_info"]][["lambda1"]]
@@ -46,7 +46,7 @@ print.sface <- function(x, ...)
       {
         ans <- do.call(cbind.data.frame, sface_list[["sface"]][[sc]][[m]])
         colnames(ans) <- subtype
-        print(ans)
+        print(ans, digits = digits)
         cat("\n")
       }
       else
@@ -58,7 +58,7 @@ print.sface <- function(x, ...)
           ans <- sface_list[["sface"]][[sc]][[m]][[su]]
           rownames(ans) <- paste0("lambda1=",as.character(lambda1))
           colnames(ans) <- paste0("lambda2=",as.character(lambda2))
-          print(ans)
+          print(ans, digits = digits)
           cat("\n")
         }
       }
