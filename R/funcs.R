@@ -309,6 +309,7 @@ RR_calc <- function(lambda1, lambda2, p_Y11_exposure1,p_Y21_exposure0, p_Y11_exp
 #'
 #' print(lst)
 #' @rdname print.sface
+#' @export print.sface
 #' @export
 print.sface <- function(x, ...)
 {
