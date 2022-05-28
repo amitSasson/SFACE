@@ -51,16 +51,14 @@ sface <- function(stand_formula,
                   MultPer=1)
 {
   #checking the input:
-  if(is.null(df[,exposure])) {stop("exposure must be a column in df")}
-  if(is.null(df[,y])) {stop("y must be a column in df")}
   if(!all(df$exposure %in% c(0,1))) {stop("exposure can only contain 0 and 1 values")}
   if(!all(df$y %in% c(0,1,2))) {stop("y can only contain 0, 1 and 2 values")}
   if(!(subtype %in% c(1,2))) {stop("The subtype should be 1 or 2")}
   if(!all(scale %in% c("diff", "RR"))) {stop("The scale should be 'diff' or 'RR' ")}
   if(!all(method %in% c("stand", "IPTW", "DR"))) {stop("The scale should be 'stand','IPTW', or 'DR' ")}
   if(any(df$weight <= 0)) {stop("weights can't be negative")}
-  if(lambda1 < 0 | lambda1 > 1) {stop("Lambda 1 should be between 0 and 1")}
-  if(lambda2 < 0 | lambda2 > 1) {stop("Lambda 2 should be between 0 and 1")}
+  if(any(lambda1 < 0) | any(lambda1 > 1)) {stop("Lambda 1 should be between 0 and 1")}
+  if(any(lambda2 < 0) | any(lambda2 > 1)) {stop("Lambda 2 should be between 0 and 1")}
   if(MultPer <= 0 ) {stop("MultPer can't be negative")}
 
   sface_list <- list()
@@ -276,8 +274,6 @@ sface <- function(stand_formula,
   return(sface_list)
 }
 
-
-
 diff_calc <- function(lambda1, lambda2, p_Y11_exposure1,p_Y21_exposure0, p_Y11_exposure0, p_Y20_exposure1, MultPer)
 {
   MultPer*(p_Y11_exposure1-lambda2*p_Y21_exposure0+(lambda1-1)*p_Y11_exposure0)/(p_Y20_exposure1-lambda2*p_Y21_exposure0)
@@ -289,63 +285,14 @@ RR_calc <- function(lambda1, lambda2, p_Y11_exposure1,p_Y21_exposure0, p_Y11_exp
   (p_Y11_exposure1-lambda2*p_Y21_exposure0)/((1-lambda1)*p_Y11_exposure0)
 }
 
-stand <- function(subtype, df, weight, scale, lambda1, lambda2, MultPer)
-{
-  for (current_subtype in subtype)
-  {
-    self <- ifelse(current_subtype == 1, "1", "2")
-    other <- ifelse(current_subtype == 1, "2", "1")
 
-    p_Y11_exposure1 <- sum(df[,weight]*pred_treat[,self])/n_w
-    p_Y21_exposure0 <- sum(df[,weight]*pred_untr[,other])/n_w
-    p_Y11_exposure0 <- sum(df[,weight]*pred_untr[,self])/n_w
-
-    if("diff" %in% scale )
-    {
-      p_Y20_exposure1 <- 1-sum(df[,weight]*pred_treat[,other])/n_w
-      estiamtors <- outer(X = lambda1,
-                          Y = lambda2,
-                          FUN = diff_calc,
-                          p_Y11_exposure1,
-                          p_Y21_exposure0,
-                          p_Y11_exposure0,
-                          p_Y20_exposure1,
-                          MultPer)
-      if(length(lambda1) > 1) {rownames(estiamtors) <- lambda1}
-      if(length(lambda2) > 1) {colnames(estiamtors) <- lambda2}
-      if(length(lambda1) == 1 & length(lambda2) == 1) {estiamtors <- c(estiamtors)}
-      sface_list[["sface"]][["diff"]][["stand"]][[current_subtype]] <- estiamtors
-      if(length(sface_list[["sface"]][["diff"]][["stand"]]) == 2)
-      {
-        sface_list[["sface"]][["diff"]][["stand"]][["theta"]] <- sface_list[["sface"]][["diff"]][["stand"]][["1"]]-sface_list[["sface"]][["diff"]][["stand"]][["2"]]
-      }
-    }
-
-    if("RR" %in% scale )
-    {
-      estiamtors <- outer(X = lambda1,
-                          Y = lambda2,
-                          FUN = RR_calc,
-                          p_Y11_exposure1,
-                          p_Y21_exposure0,
-                          p_Y11_exposure0)
-      if(length(lambda1) > 1) {rownames(estiamtors) <- lambda1}
-      if(length(lambda2) > 1) {colnames(estiamtors) <- lambda2}
-      if(length(lambda1) == 1 & length(lambda2) == 1) {estiamtors <- c(estiamtors)}
-
-      sface_list[["sface"]][["RR"]][["stand"]][[current_subtype]] <- estiamtors
-
-      if(length(sface_list[["sface"]][["RR"]][["stand"]]) == 2)
-      {
-        sface_list[["sface"]][["RR"]][["stand"]][["theta"]] <- sface_list[["sface"]][["RR"]][["stand"]][["1"]]-sface_list[["sface"]][["RR"]][["stand"]][["2"]]
-      }
-    }
-  }
-}
-
-
-
-
+#' @title Print SF-ACE
+#' @description this function prints lists of the class "sface"
+#' @param sface_list a list of class "sface", usually the output of the function sface
+#' @return
+#' @details
+#' @rdname print.sface
+#' @export
 print.sface <- function(sface_list)
 {
   lambda1 <- sface_list[["additional_info"]][["lambda1"]]
@@ -390,6 +337,26 @@ plot.sface <- function(sface_list)
   lambda2 <- sface_list[["additional_info"]][["lambda2"]]
   subtype <- paste0("subtype", sface_list[["additional_info"]][["subtype"]])
   if (length(subtype) == 2) {subtype[3] <- "theta"}
+
+  if(length(lambda1) > 1 & length(lambda2) == 1)
+  {
+    plot_one_lambda(sface_list, lambda = "lambda1", lambda_vals = lambda1)
+  }
+
+  if(length(lambda1) == 1 & length(lambda2) > 1)
+  {
+    plot_one_lambda(sface_list, "lambda2", lambda2)
+  }
+
+  if(length(lambda1) > 1 & length(lambda2) > 1)
+  {
+    plot_two_lambdas(sface_list, lambda1, lambda2)
+  }
+}
+
+
+plot_one_lambda <- function(sface_list, lambda, lambda_vals)
+{
   full_ans <-list()
   i <- 1
 
@@ -397,25 +364,69 @@ plot.sface <- function(sface_list)
   {
     for(m in names(sface_list[["sface"]][[1]]))
     {
-        for(su in names(sface_list[["sface"]][[1]][[1]]))
-        {
-          ans <- sface_list[["sface"]][[sc]][[m]][[su]]
-          rownames(ans) <- lambda1
-          colnames(ans) <- "value"
-          ans <- rownames_to_column(as.data.frame(ans), "lambda1")
-          ans$method <- m
-          ans$scale <- sc
-          ans$subtype <- su
-          full_ans[[i]] <- ans
-          i <- i + 1
-        }
+      for(su in names(sface_list[["sface"]][[1]][[1]]))
+      {
+        ans <- sface_list[["sface"]][[sc]][[m]][[su]]
+        if(lambda == "lambda2") {ans <- t(ans)}
+        rownames(ans) <- lambda_vals
+        colnames(ans) <- "value"
+        ans <- rownames_to_column(as.data.frame(ans), "lambda")
+        ans$method <- m
+        ans$scale <- sc
+        ans$subtype <- su
+        full_ans[[i]] <- ans
+        i <- i + 1
+      }
     }
   }
   full_ans <- do.call(rbind, full_ans)
-  return(full_ans)
+  p <- ggplot(full_ans, aes(x = lambda, y = value, color = subtype, group = subtype)) +
+    facet_wrap(scale ~ method, scales = "free") +
+    geom_point(alpha=0.6) +
+    geom_line() +
+    ylab("SF-ACE") +
+    theme_bw()
+
+  print(p)
 }
 
 
+
+plot_two_lambdas <- function(sfac_list, lambda1_vals, lambda2_vals)
+{
+  full_ans <-list()
+  i <- 1
+
+  for (sc in names(sface_list[["sface"]]))
+  {
+    for(m in names(sface_list[["sface"]][[1]]))
+    {
+      for(su in names(sface_list[["sface"]][[1]][[1]]))
+      {
+        ans <- sface_list[["sface"]][[sc]][[m]][[su]]
+        rownames(ans) <- lambda1_vals
+        colnames(ans) <- lambda2_vals
+        ans <- as.data.frame(as.table(ans))
+        colnames(ans) <- c("lambda1", "lambda2", "value")
+        ans$method <- m
+        ans$scale <- sc
+        ans$subtype <- su
+        full_ans[[i]] <- ans
+        i <- i + 1
+      }
+    }
+  }
+  full_ans <- do.call(rbind, full_ans)
+  plot_func <- function(df, name) {
+    ggplot(data = df, aes(x = lambda1, y = lambda2, fill = value)) +
+      geom_tile() +
+      scale_fill_continuous(name = name) +
+      facet_wrap(.~ method)
+  }
+
+  mutate(tidyr::nest(dplyr::group_by(a, scale)), plots = purrr::map2(data, scale, plot_func))
+  gridExtra::grid.arrange(grobs = nested_tmp$plots)
+}
 
 
 
