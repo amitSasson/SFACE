@@ -2,6 +2,7 @@
 
 S3method(plot,sface)
 S3method(print,sface)
+export(max_lambda)
 export(plot.sface)
 export(print.sface)
 export(sface)

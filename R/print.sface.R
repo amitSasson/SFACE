@@ -1,6 +1,7 @@
 #' @title Print SF-ACE
 #' @description this function prints lists of the class "sface"
 #' @param x a list of class "sface", usually the output of the function sface
+#' @param digits number of digits chosen for the print. Default: 4 .
 #' @param \dots not used
 #' @return
 #' @details
